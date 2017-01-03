@@ -1,1 +1,1 @@
-#!/usr/bin/pyhton
+#!/usr/bin/pyhton3
