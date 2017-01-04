@@ -1,0 +1,6 @@
+.LOG
+
+01:06 PM 04-Jan-17
+Added RS and SS functions to the code such that you can do a systematic sweep or a random sweep. 
+Systematic sweep is incomplete. 
+Random Sweep can save image files with time intervals for chronological ordering, and outputs a Mag vs Temp plot. 
