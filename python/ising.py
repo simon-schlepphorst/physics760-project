@@ -4,8 +4,6 @@ import random
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 import os
-import time
-
 
 def init_spin_array(N):
     return np.random.choice((-1, 1), size=(N, N))
@@ -26,7 +24,11 @@ def find_neighbors(spin_array, lattice, x, y):
 def energy(spin_array, lattice, x ,y):
     return 2 * spin_array[x, y] * sum(find_neighbors(spin_array, lattice, x, y))
 
-
+def n_step_pic(T,i,Arr,n):
+    if i % n == 0:
+        plt.imsave('Images/T-'+str(T)+'/'+'step-'+str(i/n).zfill(5)+'.png',Arr,format='png', cmap = cmap)
+    else:
+        return
 
 #Plot parameters
 cmap = mpl.colors.ListedColormap(['black','white'])
@@ -35,8 +37,8 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 
 RELAX_SWEEPS = 50
-lattice = int(input("Enter lattice size: "))
-sweeps = int(input("Enter the number of Monte Carlo Sweeps: "))
+lattice = input("Enter lattice size: ")
+sweeps = input("Enter the number of Monte Carlo Sweeps: ")
 
 
 if os.path.isdir('Images') is False:
@@ -68,9 +70,9 @@ def SS():
 
 #Random order Sweeping:
 def RS():
-    start = time.time()
-    Temp = []
-    Mag = []
+    T = []
+    M = []
+    steps = input("Enter how many steps in between images (set to 1 if every picture is wanted): ")
     for temperature in np.arange(0.1, 5.0, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
             continue
@@ -79,23 +81,31 @@ def RS():
         spin_array = init_spin_array(lattice)
         mag = np.zeros(sweeps + RELAX_SWEEPS)
         for sweep in range(sweeps + RELAX_SWEEPS):
-            for i in range(sweeps):
-                i = random.randint(0,lattice-1)
-                j = random.randint(0,lattice-1)
-                e = energy(spin_array, lattice, i, j)
-                if e <= 0:
-                    spin_array[i, j] *= -1
-                    continue
-                elif np.exp((-1.0 * e)/temperature) > random.random():
-                    spin_array[i, j] *= -1
-                    continue
-                plt.imsave('Images/T-'+str(temperature)+'/'+'step-'+str(time.time()-start)+'.png',spin_array,format='png', cmap = cmap)
+            
+        #for i in range(sweeps):
+            ii = random.randint(0,lattice-1)
+            jj = random.randint(0,lattice-1)
+            e = energy(spin_array, lattice, ii, jj)
+            if e <= 0:
+                spin_array[ii, jj] *= -1
+                continue
+            elif np.exp((-1.0 * e)/temperature) > random.random():
+                spin_array[ii, jj] *= -1
+                continue
+
+            n_step_pic(temperature,sweep,spin_array,steps)
+            
             mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
-        Temp =+ temperature
-        Mag += sum(mag[RELAX_SWEEPS:]) / sweeps
-        print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
+
+        T = T + [temperature]
+        M = M + [sum(mag[RELAX_SWEEPS:]) / sweeps]
+        print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps , len(M), len(T))
+        #print(temperature)
+        #print(sum(mag[RELAX_SWEEPS:]) / sweeps)
+        #print(len(M))
+        #print(len(T))
     fig = plt.figure(1)
-    plt.plot(Temp,Mag,'b-*',label='Data')
+    plt.plot(T,M,'b-*',label='Data')
     plt.title('Magnetization vs Temperature')
     plt.xlabel('Temperature')
     plt.ylabel('Magnetization')
