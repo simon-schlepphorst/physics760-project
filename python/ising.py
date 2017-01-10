@@ -37,8 +37,8 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 
 RELAX_SWEEPS = 50
-lattice = input("Enter lattice size: ")
-sweeps = input("Enter the number of Monte Carlo Sweeps: ")
+lattice = int(input("Enter lattice size: "))
+sweeps = int(input("Enter the number of Monte Carlo Sweeps: "))
 
 
 if os.path.isdir('Images') is False:
