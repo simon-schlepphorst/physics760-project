@@ -4,6 +4,10 @@ import random
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 import os
+import sys
+
+# assure that python3 is used
+assert sys.version_info.major == 3
 
 def init_spin_array(N):
     return np.random.choice((-1, 1), size=(N, N))
