@@ -5,7 +5,7 @@ Work Plan
 #########
 
 Implementation
-##############
+==============
 
 - Algorithm from the exercise as negative example
 - 2 Algorithms which tackle CSD
@@ -13,8 +13,8 @@ Implementation
 - infinite lattice = sufficient large lattice with periodic boundaries
 
 
-Analasis
-########
+Analysis
+========
 
 - many runs: bootstrap?
 - find critical point of vanishing magnetisation
@@ -25,7 +25,7 @@ Analasis
 
 
 Results
-#######
+=======
 
 - magnetisation **with error**
 - order of phase transition? Critical exponent?
@@ -33,7 +33,7 @@ Results
 
 
 Presentation
-############
+============
 
 - introduction Ising-Model
 - Video?
