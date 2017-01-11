@@ -76,7 +76,7 @@ def SS():
 def RS():
     T = []
     M = []
-    steps = input("Enter how many steps in between images (set to 1 if every picture is wanted): ")
+    steps = int(input("Enter how many steps in between images (set to 1 if every picture is wanted): "))
     for temperature in np.arange(0.1, 5.0, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
             continue
