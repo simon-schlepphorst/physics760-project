@@ -34,8 +34,10 @@ def n_step_pic(T,i,Arr,n):
 def ACF(array,swep):
     C = np.zeros_like(array)
     for y,x in enumerate(array):
-        for i,j in enumerate(x):
-            C[y,i] = (array[y,0] * array[y,i] - np.mean(array[y, :])**2)
+        for i in range(int(swep)):
+            C[y,i] = (array[y,0] * array[y,i] - np.mean(array[y, i])**2)/array[y, :].var()
+#            if i >= swep/2:
+#                break
     return C
     
 def init_energy(spin_array, lattice):
@@ -52,7 +54,7 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 
 lattice = int(input("Enter lattice size [16]: ") or 16)
-sweeps = int(input("Enter the number of Monte Carlo Sweeps [50000]: ") or 50000)
+sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
 RELAX_SWEEPS = int(sweeps/100)
 ACFE = np.zeros((50,sweeps + RELAX_SWEEPS))
 ACFM = np.zeros((50,sweeps + RELAX_SWEEPS))
@@ -92,15 +94,13 @@ def RS():
     #steps = int(input("Enter how many steps in between images (set to 1 if every picture is wanted): "))
     for temperature in np.arange(0.1, 5.0, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
-            continue
+            pass
         if os.path.isdir('Images/T-'+str(temperature)) is False:
             os.mkdir('Images/T-'+str(temperature))
         spin_array = init_spin_array(lattice)
         E = init_energy(spin_array, lattice)
         mag = np.zeros(sweeps + RELAX_SWEEPS)
         for sweep in range(sweeps + RELAX_SWEEPS):
-            
-        #for i in range(sweeps):
             ii = random.randint(0,lattice-1)
             jj = random.randint(0,lattice-1)
             e = energy(spin_array, lattice, ii, jj)
@@ -122,7 +122,7 @@ def RS():
         M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
         print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
     
-    c_e = ACF(ACFE,sweeps + RELAX_SWEEPS)
+    c_e = ACF(ACFE,sweeps/4)
     #c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
     
     print(T)
@@ -150,6 +150,7 @@ def RS():
     plt.title('ACF of Energy')
     plt.xlabel('Time Step')
     plt.ylabel('ACF Value')
+    plt.xlim(range(len(c_e[0])))
     fig.tight_layout()
     plt.legend(loc='best')
     plt.draw()
