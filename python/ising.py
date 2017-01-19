@@ -34,10 +34,10 @@ def n_step_pic(T,i,Arr,n):
 def ACF(array,swep):
     C = np.zeros_like(array)
     for y,x in enumerate(array):
-        for i,j in enumerate(x):
-            C[y,i] = (array[y,0] * array[y,i] - np.mean(array[y, :])**2)
-            
-    
+        for i in range(int(swep)):
+            C[y,i] = (array[y,0] * array[y,i] - np.mean(array[y, i])**2)/array[y, :].var()
+#            if i >= swep/2:
+#                break
     return C
     
 def init_energy(spin_array, lattice):
@@ -53,8 +53,8 @@ bounds=[-1,0,1]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 
-lattice = int(input("Enter lattice size: "))
-sweeps = int(input("Enter the number of Monte Carlo Sweeps: "))
+lattice = int(input("Enter lattice size [16]: ") or 16)
+sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
 RELAX_SWEEPS = int(sweeps/100)
 ACFE = np.zeros((50,sweeps + RELAX_SWEEPS))
 ACFM = np.zeros((50,sweeps + RELAX_SWEEPS))
@@ -122,7 +122,7 @@ def RS():
         M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
         print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
     
-    c_e = ACF(ACFE,sweeps + RELAX_SWEEPS)
+    c_e = ACF(ACFE,sweeps/4)
     #c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
     
     print(T)
@@ -147,6 +147,7 @@ def RS():
     plt.title('ACF of Energy')
     plt.xlabel('Time Step')
     plt.ylabel('ACF Value')
+    plt.xlim(range(len(c_e[0])))
     fig.tight_layout()
     plt.legend(loc='best')
     plt.show()
