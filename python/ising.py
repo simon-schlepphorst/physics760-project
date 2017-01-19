@@ -36,6 +36,8 @@ def ACF(array,swep):
     for y,x in enumerate(array):
         for i,j in enumerate(x):
             C[y,i] = (array[y,0] * array[y,i] - np.mean(array[y, :])**2)
+            
+    
     return C
     
 def init_energy(spin_array, lattice):
@@ -92,15 +94,13 @@ def RS():
     #steps = int(input("Enter how many steps in between images (set to 1 if every picture is wanted): "))
     for temperature in np.arange(0.1, 5.0, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
-            continue
+            pass
         if os.path.isdir('Images/T-'+str(temperature)) is False:
             os.mkdir('Images/T-'+str(temperature))
         spin_array = init_spin_array(lattice)
         E = init_energy(spin_array, lattice)
         mag = np.zeros(sweeps + RELAX_SWEEPS)
         for sweep in range(sweeps + RELAX_SWEEPS):
-            
-        #for i in range(sweeps):
             ii = random.randint(0,lattice-1)
             jj = random.randint(0,lattice-1)
             e = energy(spin_array, lattice, ii, jj)
