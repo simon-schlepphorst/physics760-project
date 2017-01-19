@@ -51,8 +51,8 @@ bounds=[-1,0,1]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 
-lattice = int(input("Enter lattice size: "))
-sweeps = int(input("Enter the number of Monte Carlo Sweeps: "))
+lattice = int(input("Enter lattice size [16]: ") or 16)
+sweeps = int(input("Enter the number of Monte Carlo Sweeps [50000]: ") or 50000)
 RELAX_SWEEPS = int(sweeps/100)
 ACFE = np.zeros((50,sweeps + RELAX_SWEEPS))
 ACFM = np.zeros((50,sweeps + RELAX_SWEEPS))
@@ -136,7 +136,10 @@ def RS():
     plt.xlabel('Temperature')
     plt.ylabel('Magnetization')
     fig.tight_layout()
-    plt.show()
+    plt.draw()
+    plt.pause(1)
+    input("Hit ENTER ...")
+    plt.close()
     
     fig = plt.figure()
     plt.plot(range(len(c_e[0])),c_e[0],'b-*',label='T = 0.1')
@@ -149,7 +152,10 @@ def RS():
     plt.ylabel('ACF Value')
     fig.tight_layout()
     plt.legend(loc='best')
-    plt.show()
+    plt.draw()
+    plt.pause(1)
+    input("Hit ENTER ...")
+    plt.close()
     
     #fig = plt.figure()
     #plt.plot(range(len(c_m[0])),c_m[0],'b-*',label='T = 0.1')
