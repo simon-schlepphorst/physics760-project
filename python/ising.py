@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 import os
 
+
 def init_spin_array(N):
     return np.random.choice((-1, 1), size=(N, N))
 
@@ -50,13 +51,11 @@ bounds=[-1,0,1]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 
-
 lattice = int(input("Enter lattice size: "))
 sweeps = int(input("Enter the number of Monte Carlo Sweeps: "))
 RELAX_SWEEPS = int(sweeps/100)
 ACFE = np.zeros((50,sweeps + RELAX_SWEEPS))
 ACFM = np.zeros((50,sweeps + RELAX_SWEEPS))
-
 
 
 if os.path.isdir('Images') is False:
