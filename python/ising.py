@@ -34,8 +34,8 @@ def n_step_pic(T,i,Arr,n):
 def ACF(array,swep):
     C = np.zeros_like(array)
     for y,x in enumerate(array):
-        for i in x:
-            C[y,int(i)] = (array[y,0] * array[y,int(i)] - np.mean(array[y, :])**2)
+        for i,j in enumerate(x):
+            C[y,i] = (array[y,0] * array[y,i] - np.mean(array[y, :])**2)
     return C
     
 def init_energy(spin_array, lattice):
@@ -89,7 +89,7 @@ def SS():
 def RS():
     T = []
     M = []
-    steps = int(input("Enter how many steps in between images (set to 1 if every picture is wanted): "))
+    #steps = int(input("Enter how many steps in between images (set to 1 if every picture is wanted): "))
     for temperature in np.arange(0.1, 5.0, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
             continue
@@ -111,19 +111,19 @@ def RS():
                 spin_array[ii, jj] *= -1
                 continue
 
-            n_step_pic(temperature,sweep,spin_array,steps)
+            #n_step_pic(temperature,sweep,spin_array,steps)
             
             mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
             E = E + e
             ACFE[int(temperature*10 - 1),sweep] = E
-            ACFM[int(temperature*10 - 1),sweep] = mag[sweep]
+            #ACFM[int(temperature*10 - 1),sweep] = mag[sweep]
             
-        T = T + [temperature]
-        M = M + [sum(mag[RELAX_SWEEPS:]) / sweeps]
+        T.append(temperature)
+        M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
         print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
     
     c_e = ACF(ACFE,sweeps + RELAX_SWEEPS)
-    c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
+    #c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
     
     print(T)
     print(M)
@@ -151,18 +151,18 @@ def RS():
     plt.legend(loc='best')
     plt.show()
     
-    fig = plt.figure()
-    plt.plot(range(len(c_m[0])),c_m[0],'b-*',label='T = 0.1')
-    plt.plot(range(len(c_m[0])),c_m[9],'r-o',label='T = 1.0')
-    plt.plot(range(len(c_m[0])),c_m[19],'k-^',label='T = 2.0')
-    plt.plot(range(len(c_m[0])),c_m[29],'c-s',label='T = 3.0')
-    plt.plot(range(len(c_m[0])),c_m[39],'m-p',label='T = 4.0')
-    plt.title('ACF of Magnetization')
-    plt.xlabel('Time Step')
-    plt.ylabel('ACF Value')
-    fig.tight_layout()
-    plt.legend(loc='best')
-    plt.show()
+    #fig = plt.figure()
+    #plt.plot(range(len(c_m[0])),c_m[0],'b-*',label='T = 0.1')
+    #plt.plot(range(len(c_m[0])),c_m[9],'r-o',label='T = 1.0')
+    #plt.plot(range(len(c_m[0])),c_m[19],'k-^',label='T = 2.0')
+    #plt.plot(range(len(c_m[0])),c_m[29],'c-s',label='T = 3.0')
+    #plt.plot(range(len(c_m[0])),c_m[39],'m-p',label='T = 4.0')
+    #plt.title('ACF of Magnetization')
+    #plt.xlabel('Time Step')
+    #plt.ylabel('ACF Value')
+    #fig.tight_layout()
+    #plt.legend(loc='best')
+    #plt.show()
     
     #pl1 = ["ACFE","c_e","Temp","Mag"]
     #pl2 = [ACFE,c_e,T,M]
