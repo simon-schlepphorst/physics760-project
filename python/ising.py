@@ -35,9 +35,9 @@ def ACF(array,swep):
     C = np.zeros_like(array)
     for y,x in enumerate(array):
         for i in range(int(swep)):
-            C[y,i] = (array[y,0] * array[y,i] - np.mean(array[y, i])**2)/array[y, :].var()
-#            if i >= swep/2:
-#                break
+            #C[y,i] = (array[y][0] * array[y][i] - np.mean(array[y])**2)/np.var(array[y])
+            C[y,i] = (array[y][0] * array[y][i] - np.mean(array[y])**2)/(array[y][0]**2 - np.mean(array[y])**2)
+#        print((y+1)/10,"\n",C[y][:int(swep)])
     return C
     
 def init_energy(spin_array, lattice):
@@ -53,7 +53,7 @@ bounds=[-1,0,1]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 
-lattice = int(input("Enter lattice size [16]: ") or 16)
+lattice = int(input("Enter lattice size [8]: ") or 8)
 sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
 RELAX_SWEEPS = int(sweeps/100)
 ACFE = np.zeros((50,sweeps + RELAX_SWEEPS))
@@ -68,7 +68,7 @@ if os.path.isdir('Images') is False:
 def SS():
     for temperature in np.arange(0.1, 5.0, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
-            continue
+            pass
         if os.path.isdir('Images/T-'+str(temperature)) is False:
             os.mkdir('Images/T-'+str(temperature))
         spin_array = init_spin_array(lattice)
@@ -113,22 +113,29 @@ def RS():
 
             #n_step_pic(temperature,sweep,spin_array,steps)
             
+            if sweep == 0:
+                ACFE[int(temperature*10 - 1)][0] = E
+            elif sweep != 0:
+                ACFE[int(temperature*10 - 1)][sweep] = ACFE[int(temperature*10 - 1)][sweep-1]+e
+                
+#            E = E+e    
+            
             mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
-            E = E + e
-            ACFE[int(temperature*10 - 1),sweep] = E
+#            ACFE[int(temperature*10 - 1)][sweep] = E
             #ACFM[int(temperature*10 - 1),sweep] = mag[sweep]
             
         T.append(temperature)
         M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
-        print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
+#        print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
+        print([temperature],"\n",ACFE[int(temperature*10 - 1)])
     
     c_e = ACF(ACFE,sweeps/4)
     #c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
     
-    print(T)
-    print(M)
-    print(ACFE)
-    print(c_e)
+#    print(T)
+#    print(M)
+#    print(ACFE)
+#    print(c_e)
     
     fig = plt.figure(1)
     plt.plot(T,M,'b-*',label='Data')
@@ -147,7 +154,7 @@ def RS():
     plt.title('ACF of Energy')
     plt.xlabel('Time Step')
     plt.ylabel('ACF Value')
-    plt.xlim(range(len(c_e[0])))
+    plt.xlim(0,sweeps/4-1)
     fig.tight_layout()
     plt.legend(loc='best')
     plt.show()
