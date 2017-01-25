@@ -31,13 +31,28 @@ def n_step_pic(T,i,Arr,n):
     else:
         return
 
-def ACF(array,swep):
-    C = np.zeros_like(array)
+#def ACF(array,swep):
+#    C = np.zeros_like(array)
+#    for y,x in enumerate(array):
+#        for i in range(int(swep)):
+#            #C[y,i] = (x[0] * x[i] - np.mean(x)**2)/np.var(x)
+#            C[y,i] = (x[0] * x[i] - np.mean(x)**2)/(x[0]**2 - np.mean(x)**2)
+##        print((y+1)/10,"\n",C[y][:int(swep)])
+#    return C
+
+def ACC(x,k):
+    n = int(len(x))
+    k = int(k)
+    xn = np.array(x)
+    Eval = [i for i in (xn[:n-k]-xn.mean())*(xn[k:]-xn.mean())]
+    Coeffs = 1/((n-k)*xn.var())
+    results = Coeffs * sum(Eval)
+    return results
+
+def ACF(array,tstep):
+    C = [[] for i in range(len(array))]
     for y,x in enumerate(array):
-        for i in range(int(swep)):
-            C[y,i] = (array[y,0] * array[y,i] - np.mean(array[y, i])**2)/array[y, :].var()
-#            if i >= swep/2:
-#                break
+        C[y] = [ACC(x,i) for i in range(int(tstep))]
     return C
     
 def init_energy(spin_array, lattice):
@@ -53,8 +68,9 @@ bounds=[-1,0,1]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 
-lattice = int(input("Enter lattice size [16]: ") or 16)
+lattice = int(input("Enter lattice size [8]: ") or 8)
 sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
+ACFTime = int(input("Enter the time for ACF to run over [500]: ") or 500)
 RELAX_SWEEPS = int(sweeps/100)
 ACFE = np.zeros((50,sweeps + RELAX_SWEEPS))
 ACFM = np.zeros((50,sweeps + RELAX_SWEEPS))
@@ -68,7 +84,7 @@ if os.path.isdir('Images') is False:
 def SS():
     for temperature in np.arange(0.1, 5.0, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
-            continue
+            pass
         if os.path.isdir('Images/T-'+str(temperature)) is False:
             os.mkdir('Images/T-'+str(temperature))
         spin_array = init_spin_array(lattice)
@@ -113,25 +129,29 @@ def RS():
 
             #n_step_pic(temperature,sweep,spin_array,steps)
             
-            mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
-            E = E + e
-            ACFE[int(temperature*10 - 1),sweep] = E
-            #ACFM[int(temperature*10 - 1),sweep] = mag[sweep]
+            if sweep == 0:
+                ACFE[int(temperature*10 - 1)][0] = E
+            elif sweep != 0:
+                ACFE[int(temperature*10 - 1)][sweep] = ACFE[int(temperature*10 - 1)][sweep-1]+e
+                
+#            E = E+e    
             
+            mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
+#            ACFE[int(temperature*10 - 1)][sweep] = E
+            #ACFM[int(temperature*10 - 1),sweep] = mag[sweep]
+        print("Temp ",[temperature], "and Mag ",[sum(mag[RELAX_SWEEPS:]) / sweeps]," Appending...\n")    
         T.append(temperature)
         M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
-        print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
+#        print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
+#        print([temperature],"\n",ACFE[int(temperature*10 - 1)])
+    print("Getting ACF Function...\n")
+    c_e = ACF(ACFE,ACFTime)
+#    c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
     
-    c_e = ACF(ACFE,sweeps/4)
-    #c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
-    
-    print(T)
-    print(M)
-    print(ACFE)
-    print(c_e)
+    print("ACF Function Complete")
     
     fig = plt.figure(1)
-    plt.plot(T,M,'b-*',label='Data')
+    plt.errorbar(T,M,yerr=np.sqrt(np.var(M)/sweeps),fmt='b-*',label='Data')
     plt.title('Magnetization vs Temperature')
     plt.xlabel('Temperature')
     plt.ylabel('Magnetization')
@@ -141,7 +161,7 @@ def RS():
     input("Hit ENTER ...")
     plt.close()
     
-    fig = plt.figure()
+    fig = plt.figure(2)
     plt.plot(range(len(c_e[0])),c_e[0],'b-*',label='T = 0.1')
     plt.plot(range(len(c_e[0])),c_e[9],'r-o',label='T = 1.0')
     plt.plot(range(len(c_e[0])),c_e[19],'k-^',label='T = 2.0')
@@ -150,7 +170,7 @@ def RS():
     plt.title('ACF of Energy')
     plt.xlabel('Time Step')
     plt.ylabel('ACF Value')
-    plt.xlim(range(len(c_e[0])))
+    plt.xlim(0,len(c_e[0]))
     fig.tight_layout()
     plt.legend(loc='best')
     plt.draw()
@@ -158,7 +178,7 @@ def RS():
     input("Hit ENTER ...")
     plt.close()
     
-    #fig = plt.figure()
+    #fig = plt.figure(3)
     #plt.plot(range(len(c_m[0])),c_m[0],'b-*',label='T = 0.1')
     #plt.plot(range(len(c_m[0])),c_m[9],'r-o',label='T = 1.0')
     #plt.plot(range(len(c_m[0])),c_m[19],'k-^',label='T = 2.0')
@@ -167,14 +187,12 @@ def RS():
     #plt.title('ACF of Magnetization')
     #plt.xlabel('Time Step')
     #plt.ylabel('ACF Value')
+    #plt.xlim(0,len(c_m[0]))
     #fig.tight_layout()
     #plt.legend(loc='best')
     #plt.show()
     
-    #pl1 = ["ACFE","c_e","Temp","Mag"]
-    #pl2 = [ACFE,c_e,T,M]
-    #for i,j in zip(pl1,pl2):
-    #    np.savetxt(i+".txt",j)
+#    np.savetxt('ACF_Array.txt',c_e)
 
 print("You may choose a random or systematic sweep by typing RS() or SS() \nBut I'm just gonna run RS()")
 
