@@ -3,14 +3,17 @@ import numpy as np
 import random
 from matplotlib import pyplot as plt
 import matplotlib as mpl
-from scipy.fftpack import fft
 import os
 
 mpl.rcParams.update({'font.size': 22})
 
-def init_spin_array(N):
-    return np.random.choice((-1, 1), size=(N, N))
-
+def init_spin_array(N,choice):
+    if choice == 'random':
+        return np.random.choice((-1, 1), size=(N, N)).astype('int8')
+    elif choice == 'hot':
+        return np.resize([1,-1],(N,N))
+    elif choice == 'cold':
+        return np.ones((N,N), dtype='int8')
 
 def find_neighbors(spin_array, lattice, x, y):
     left   = (x, y - 1)     
@@ -33,15 +36,6 @@ def n_step_pic(T,i,Arr,n):
     else:
         return
 
-#def ACF(array,swep):
-#    C = np.zeros_like(array)
-#    for y,x in enumerate(array):
-#        for i in range(int(swep)):
-#            #C[y,i] = (x[0] * x[i] - np.mean(x)**2)/np.var(x)
-#            C[y,i] = (x[0] * x[i] - np.mean(x)**2)/(x[0]**2 - np.mean(x)**2)
-##        print((y+1)/10,"\n",C[y][:int(swep)])
-#    return C
-
 def ACC(x,k):
     n = int(len(x))
     k = int(k)
@@ -60,17 +54,18 @@ def ACF(array,tstep):
 def MeanBlock(array,xran):
     RowLen = len(array[0])
     ColLen = len(array)
-    SigList = []
     Sigmas = []
     while RowLen%xran != 0:
         RowLen += -1
-    RowLen = int(RowLen)
     for y in range(ColLen):
+        SigList = []
         for B in range(1,xran):
             Array = [array[y][i:i+B] for i in range(0,RowLen,B)]
+            if len(Array[0]) != len(Array[len(Array)-1]):
+                Array = Array[0:len(Array)-2]
             Means = np.mean(Array,axis=1)
             SigmaMeans = np.std(Means)
-            SigList.append([y,B,SigmaMeans])
+            SigList.append(SigmaMeans)
         Sigmas.append(SigList)
     return Sigmas
 
@@ -90,6 +85,7 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 lattice = int(input("Enter lattice size [8]: ") or 8)
 sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
 ACFTime = int(input("Enter the time for ACF to run over [500]: ") or 500)
+choice = str(input("Choose array to start with (hot/cold/[random]): ") or "random")
 RELAX_SWEEPS = int(sweeps/100)
 Et = np.zeros((50,sweeps + RELAX_SWEEPS))
 Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
@@ -132,7 +128,7 @@ def RS():
             pass
         if os.path.isdir('Images/T-'+str(temperature)) is False:
             os.mkdir('Images/T-'+str(temperature))
-        spin_array = init_spin_array(lattice)
+        spin_array = init_spin_array(lattice,choice)
         E = init_energy(spin_array, lattice)
         mag = np.zeros(sweeps + RELAX_SWEEPS)
         for sweep in range(sweeps + RELAX_SWEEPS):
@@ -151,7 +147,7 @@ def RS():
             if sweep == 0:
                 Et[int(temperature*10 - 1)][0] = E
             elif sweep != 0:
-                Et[int(temperature*10 - 1)][sweep] = ACFE[int(temperature*10 - 1)][sweep-1]+e
+                Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
                 
             mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
             #Mt[int(temperature*10 - 1),sweep] = mag[sweep]
@@ -159,20 +155,30 @@ def RS():
         T.append(temperature)
         M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
         
-    print("Getting ACF Function...\n")
+#    print("Getting ACF Function...\n")
 #    c_e = ACF(Et,ACFTime)
-#    c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
+#    c_m = ACF(Mt,ACFTime)
+#    
+#    print("ACF Function Complete")
     
-    print("ACF Function Complete")
-    
-    print("Finding Errors")
+    print("Finding Errors via Blocking")
     
     xRange = [i for i in range(1,500)]
-    SigE = [MeanBlock(Et,500)]
-
+    Sigmas = [MeanBlock(Et,500)]
     
     fig = plt.figure(4)
-    plt.plot(xRange,SigE)
+    plt.plot(xRange,Sigmas[0][0],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[0][9],'r-o',label='T = 1.0')
+    plt.plot(xRange,Sigmas[0][19],'k-^',label='T = 2.0')
+    plt.plot(xRange,Sigmas[0][29],'c-s',label='T = 3.0')
+    plt.plot(xRange,Sigmas[0][39],'m-p',label='T = 4.0')
+    plt.title('Error of the Energy vs Block Size')
+    plt.xlabel('Block Size')
+    plt.ylabel('$\sigma$')
+    plt.xlim(0,len(xRange))
+    fig.tight_layout()
+    plt.legend(loc='best')
+    plt.show()
     
     fig = plt.figure(1)
     plt.errorbar(T,M,yerr=np.sqrt(np.var(M)/sweeps),fmt='b-*',label='Data')
@@ -209,11 +215,10 @@ def RS():
     #fig.tight_layout()
     #plt.legend(loc='best')
     #plt.show()
-    
-#    np.savetxt('ACF_Array.txt',c_e)
+
 
     
 
 print("You may choose a random or systematic sweep by typing RS() or SS() \nBut I'm just gonna run RS()")
 
-#RS()
+RS()
