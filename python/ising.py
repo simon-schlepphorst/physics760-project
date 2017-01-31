@@ -76,6 +76,9 @@ def init_energy(spin_array, lattice):
             E[x,y] = 2 * spin_array[x, y] * sum(find_neighbors(spin_array, lattice, x, y))
     return E.mean()
 
+def init_mag(spin_array, lattice):
+    return abs(sum(sum(spin_array))) / (lattice ** 2)
+
 #Plot parameters
 cmap = mpl.colors.ListedColormap(['black','white'])
 bounds=[-1,0,1]
@@ -123,7 +126,7 @@ def RS():
     T = []
     M = []
     #steps = int(input("Enter how many steps in between images (set to 1 if every picture is wanted): "))
-    for temperature in np.arange(0.1, 5.0, 0.1):
+    for temperature in np.arange(0.1, 5.1, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
             pass
         if os.path.isdir('Images/T-'+str(temperature)) is False:
@@ -135,22 +138,30 @@ def RS():
             ii = random.randint(0,lattice-1)
             jj = random.randint(0,lattice-1)
             e = energy(spin_array, lattice, ii, jj)
+            OrientI = spin_array[ii,jj]
+            
             if e <= 0:
                 spin_array[ii, jj] *= -1
                 continue
             elif np.exp((-1.0 * e)/temperature) > random.random():
                 spin_array[ii, jj] *= -1
                 continue
-
-            #n_step_pic(temperature,sweep,spin_array,steps)
             
+            OrientF = spin_array[ii,jj]
+            mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
+
             if sweep == 0:
                 Et[int(temperature*10 - 1)][0] = E
-            elif sweep != 0:
+                  
+            #n_step_pic(temperature,sweep,spin_array,steps)
+            
+            if OrientF == OrientI and sweep != 0:
+                Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
+            if OrientF != OrientI and sweep != 0:
                 Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
-                
-            mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
-            #Mt[int(temperature*10 - 1),sweep] = mag[sweep]
+            
+            Mt[int(temperature*10 - 1),sweep] = mag[sweep]
+            
         print("Temp ",[temperature], "and Mag ",[sum(mag[RELAX_SWEEPS:]) / sweeps]," Appending...\n")    
         T.append(temperature)
         M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
@@ -159,12 +170,12 @@ def RS():
 #    c_e = ACF(Et,ACFTime)
 #    c_m = ACF(Mt,ACFTime)
 #    
-#    print("ACF Function Complete")
+#    print("ACF Function Complete\n")
     
-    print("Finding Errors via Blocking")
+    print("Finding Errors via Blocking\n")
     
     xRange = [i for i in range(1,500)]
-    Sigmas = [MeanBlock(Et,500)]
+    Sigmas = [MeanBlock(Et,500),MeanBlock(Mt,500)]
     
     fig = plt.figure(4)
     plt.plot(xRange,Sigmas[0][0],'b-*',label='T = 0.1')
@@ -172,6 +183,7 @@ def RS():
     plt.plot(xRange,Sigmas[0][19],'k-^',label='T = 2.0')
     plt.plot(xRange,Sigmas[0][29],'c-s',label='T = 3.0')
     plt.plot(xRange,Sigmas[0][39],'m-p',label='T = 4.0')
+    plt.plot(xRange,Sigmas[0][49],'g-h',label='T = 5.0')
     plt.title('Error of the Energy vs Block Size')
     plt.xlabel('Block Size')
     plt.ylabel('$\sigma$')
@@ -180,11 +192,64 @@ def RS():
     plt.legend(loc='best')
     plt.show()
     
+    fig = plt.figure(5)
+    plt.plot(xRange,Sigmas[1][0],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[1][9],'r-o',label='T = 1.0')
+    plt.plot(xRange,Sigmas[1][19],'k-^',label='T = 2.0')
+    plt.plot(xRange,Sigmas[1][29],'c-s',label='T = 3.0')
+    plt.plot(xRange,Sigmas[1][39],'m-p',label='T = 4.0')
+    plt.plot(xRange,Sigmas[1][49],'g-h',label='T = 5.0')
+    plt.title('Error of the Magnetization vs Block Size')
+    plt.xlabel('Block Size')
+    plt.ylabel('$\sigma$')
+    plt.xlim(0,len(xRange))
+    fig.tight_layout()
+    plt.legend(loc='best')
+    plt.show()
+    
+#    for i in range(50):
+#        plt.plot(xRange,Sigmas[1][i],label='T = ' + str((1+i)/10))
+#    plt.legend(loc='best',prop={'size':8})
+    
     fig = plt.figure(1)
     plt.errorbar(T,M,yerr=np.sqrt(np.var(M)/sweeps),fmt='b-*',label='Data')
     plt.title('Magnetization vs Temperature')
     plt.xlabel('Temperature')
     plt.ylabel('Magnetization')
+    fig.tight_layout()
+    plt.show()
+    
+    '''
+    Since we now have the blocking, it would be useful to recall the array arrangements here
+    As you can see, we now need to apply the blocking to the M matrix so we can apply the coorect
+    error. So here we can recalculate all the magnetizations blocked and then append their means
+    to the M matrix. 
+    '''
+#   Naive blocked errors as it has just picked the 100th step which seems ok for the most part.
+    
+    BlockedSigmas = np.array(Sigmas)[1,:,45]
+    
+    Sigmas = np.array(Sigmas)
+    Positions = []
+    PercentDifference = .0025
+    for t in range(len(Sigmas[1])):
+        for i in range(len(Sigmas[1][0])):
+            if Sigmas[1][t][i] >= Sigmas[1][t][i-1]*(1-PercentDifference) and\
+                 Sigmas[1][t][i] <= Sigmas[1][t][i-1]*(1+PercentDifference) and\
+                 Sigmas[1][t][i] >= Sigmas[1][t][i+1]*(1-PercentDifference) and\
+                 Sigmas[1][t][i] <= Sigmas[1][t][i+1]*(1+PercentDifference):
+                     Positions.append(i)
+                     break
+
+    BlockedSigmas2 = [Sigmas[1,i,j] for i,j in enumerate(Positions)]
+    
+    fig = plt.figure(6)
+    plt.errorbar(T,M,yerr=BlockedSigmas,fmt='b-o',label='Naiive Blocking Choice')
+    plt.errorbar(T,M,yerr=BlockedSigmas2,fmt='r-o',label='Individual Blocking Choice')
+    plt.title('Magnetization vs Temperature')
+    plt.xlabel('Temperature')
+    plt.ylabel('Magnetization')
+    plt.legend(loc='best')
     fig.tight_layout()
     plt.show()
     
