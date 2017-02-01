@@ -5,6 +5,7 @@ import random
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 import os
+import tqdm
 
 mpl.rcParams.update({'font.size': 22})
 
@@ -161,41 +162,44 @@ def RS():
         spin_array = init_spin_array(lattice,choice)
         E = init_energy(spin_array, lattice)
         mag = np.zeros(sweeps + RELAX_SWEEPS)
-        for sweep, save in zip(range(sweeps + RELAX_SWEEPS), itertools.cycle((save_n-1)*[False] + [True])):
-            ii = random.randint(0,lattice-1)
-            jj = random.randint(0,lattice-1)
-            e = energy(spin_array, lattice, ii, jj)
-            OrientI = spin_array[ii,jj]
-            
-            if e <= 0:
-                spin_array[ii, jj] *= -1
-                continue
-            elif np.exp((-1.0 * e)/temperature) > random.random():
-                spin_array[ii, jj] *= -1
-                continue
-            
-            OrientF = spin_array[ii,jj]
-            mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
+        with tqdm.tqdm(desc= 'T='+str(temperature), total=sweeps + RELAX_SWEEPS,  dynamic_ncols=True) as bar:
+            for sweep, save in zip(range(sweeps + RELAX_SWEEPS), itertools.cycle((save_n-1)*[False] + [True])):
+                bar.update()
+                ii = random.randint(0,lattice-1)
+                jj = random.randint(0,lattice-1)
+                e = energy(spin_array, lattice, ii, jj)
+                OrientI = spin_array[ii,jj]
 
-            if sweep == 0:
-                Et[int(temperature*10 - 1)][0] = E
-                  
-            #n_step_pic(temperature,sweep,spin_array,steps)
-            
-            if OrientF == OrientI and sweep != 0:
-                Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
-            if OrientF != OrientI and sweep != 0:
-                Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
-            
-            Mt[int(temperature*10 - 1),sweep] = mag[sweep]
+                if e <= 0:
+                    spin_array[ii, jj] *= -1
+                    continue
+                elif np.exp((-1.0 * e)/temperature) > random.random():
+                    spin_array[ii, jj] *= -1
+                    continue
 
-            if save:
-                save_array('Saves/T-'+str(temperature), spin_array, sweep, T=0, E=0, M=0, A=0)
-                #TODO feed the right values for temperature etc.
-            
-        print("Temp ",[temperature], "and Mag ",[sum(mag[RELAX_SWEEPS:]) / sweeps]," Appending...\n")    
-        T.append(temperature)
-        M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
+                OrientF = spin_array[ii,jj]
+                mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
+
+                if sweep == 0:
+                    Et[int(temperature*10 - 1)][0] = E
+
+                #n_step_pic(temperature,sweep,spin_array,steps)
+
+                if OrientF == OrientI and sweep != 0:
+                    Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
+                if OrientF != OrientI and sweep != 0:
+                    Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
+
+                Mt[int(temperature*10 - 1),sweep] = mag[sweep]
+
+                if save:
+                    save_array('Saves/T-'+str(temperature), spin_array, sweep, T=0, E=0, M=0, A=0)
+                    #TODO feed the right values for temperature etc.
+
+            #print("Temp ",[temperature], "and Mag ",[sum(mag[RELAX_SWEEPS:]) / sweeps]," Appending...\n")
+            T.append(temperature)
+            M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
+            bar.update()
         
 #    print("Getting ACF Function...\n")
 #    c_e = ACF(Et,ACFTime)
