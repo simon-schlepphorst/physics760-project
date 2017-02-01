@@ -5,10 +5,15 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 import os
 
+mpl.rcParams.update({'font.size': 22})
 
-def init_spin_array(N):
-    return np.random.choice((-1, 1), size=(N, N))
-
+def init_spin_array(N,choice):
+    if choice == 'random':
+        return np.random.choice((-1, 1), size=(N, N)).astype('int8')
+    elif choice == 'hot':
+        return np.resize([1,-1],(N,N))
+    elif choice == 'cold':
+        return np.ones((N,N), dtype='int8')
 
 def find_neighbors(spin_array, lattice, x, y):
     left   = (x, y - 1)     
@@ -31,15 +36,6 @@ def n_step_pic(T,i,Arr,n):
     else:
         return
 
-#def ACF(array,swep):
-#    C = np.zeros_like(array)
-#    for y,x in enumerate(array):
-#        for i in range(int(swep)):
-#            #C[y,i] = (x[0] * x[i] - np.mean(x)**2)/np.var(x)
-#            C[y,i] = (x[0] * x[i] - np.mean(x)**2)/(x[0]**2 - np.mean(x)**2)
-##        print((y+1)/10,"\n",C[y][:int(swep)])
-#    return C
-
 def ACC(x,k):
     n = int(len(x))
     k = int(k)
@@ -54,13 +50,34 @@ def ACF(array,tstep):
     for y,x in enumerate(array):
         C[y] = [ACC(x,i) for i in range(int(tstep))]
     return C
-    
+
+def MeanBlock(array,xran):
+    RowLen = len(array[0])
+    ColLen = len(array)
+    Sigmas = []
+    while RowLen%xran != 0:
+        RowLen += -1
+    for y in range(ColLen):
+        SigList = []
+        for B in range(1,xran):
+            Array = [array[y][i:i+B] for i in range(0,RowLen,B)]
+            if len(Array[0]) != len(Array[len(Array)-1]):
+                Array = Array[0:len(Array)-2]
+            Means = np.mean(Array,axis=1)
+            SigmaMeans = np.std(Means)
+            SigList.append(SigmaMeans)
+        Sigmas.append(SigList)
+    return Sigmas
+
 def init_energy(spin_array, lattice):
     E = np.zeros_like(spin_array)
     for x in range(lattice):
         for y in range(lattice):
             E[x,y] = 2 * spin_array[x, y] * sum(find_neighbors(spin_array, lattice, x, y))
     return E.mean()
+
+def init_mag(spin_array, lattice):
+    return abs(sum(sum(spin_array))) / (lattice ** 2)
 
 #Plot parameters
 cmap = mpl.colors.ListedColormap(['black','white'])
@@ -71,9 +88,10 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 lattice = int(input("Enter lattice size [8]: ") or 8)
 sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
 ACFTime = int(input("Enter the time for ACF to run over [500]: ") or 500)
+choice = str(input("Choose array to start with (hot/cold/[random]): ") or "random")
 RELAX_SWEEPS = int(sweeps/100)
-ACFE = np.zeros((50,sweeps + RELAX_SWEEPS))
-ACFM = np.zeros((50,sweeps + RELAX_SWEEPS))
+Et = np.zeros((50,sweeps + RELAX_SWEEPS))
+Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
 
 
 if os.path.isdir('Images') is False:
@@ -108,47 +126,90 @@ def RS():
     T = []
     M = []
     #steps = int(input("Enter how many steps in between images (set to 1 if every picture is wanted): "))
-    for temperature in np.arange(0.1, 5.0, 0.1):
+    for temperature in np.arange(0.1, 5.1, 0.1):
         if os.path.isdir('Images/T-'+str(temperature)) is True:
             pass
         if os.path.isdir('Images/T-'+str(temperature)) is False:
             os.mkdir('Images/T-'+str(temperature))
-        spin_array = init_spin_array(lattice)
+        spin_array = init_spin_array(lattice,choice)
         E = init_energy(spin_array, lattice)
         mag = np.zeros(sweeps + RELAX_SWEEPS)
         for sweep in range(sweeps + RELAX_SWEEPS):
             ii = random.randint(0,lattice-1)
             jj = random.randint(0,lattice-1)
             e = energy(spin_array, lattice, ii, jj)
+            OrientI = spin_array[ii,jj]
+            
             if e <= 0:
                 spin_array[ii, jj] *= -1
                 continue
             elif np.exp((-1.0 * e)/temperature) > random.random():
                 spin_array[ii, jj] *= -1
                 continue
+            
+            OrientF = spin_array[ii,jj]
+            mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
 
+            if sweep == 0:
+                Et[int(temperature*10 - 1)][0] = E
+                  
             #n_step_pic(temperature,sweep,spin_array,steps)
             
-            if sweep == 0:
-                ACFE[int(temperature*10 - 1)][0] = E
-            elif sweep != 0:
-                ACFE[int(temperature*10 - 1)][sweep] = ACFE[int(temperature*10 - 1)][sweep-1]+e
-                
-#            E = E+e    
+            if OrientF == OrientI and sweep != 0:
+                Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
+            if OrientF != OrientI and sweep != 0:
+                Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
             
-            mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
-#            ACFE[int(temperature*10 - 1)][sweep] = E
-            #ACFM[int(temperature*10 - 1),sweep] = mag[sweep]
+            Mt[int(temperature*10 - 1),sweep] = mag[sweep]
+            
         print("Temp ",[temperature], "and Mag ",[sum(mag[RELAX_SWEEPS:]) / sweeps]," Appending...\n")    
         T.append(temperature)
         M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
-#        print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
-#        print([temperature],"\n",ACFE[int(temperature*10 - 1)])
-    print("Getting ACF Function...\n")
-    c_e = ACF(ACFE,ACFTime)
-#    c_m = ACF(ACFM,sweeps + RELAX_SWEEPS)
+        
+#    print("Getting ACF Function...\n")
+#    c_e = ACF(Et,ACFTime)
+#    c_m = ACF(Mt,ACFTime)
+#    
+#    print("ACF Function Complete\n")
     
-    print("ACF Function Complete")
+    print("Finding Errors via Blocking\n")
+    
+    xRange = [i for i in range(1,500)]
+    Sigmas = [MeanBlock(Et,500),MeanBlock(Mt,500)]
+    
+    fig = plt.figure(4)
+    plt.plot(xRange,Sigmas[0][0],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[0][9],'r-o',label='T = 1.0')
+    plt.plot(xRange,Sigmas[0][19],'k-^',label='T = 2.0')
+    plt.plot(xRange,Sigmas[0][29],'c-s',label='T = 3.0')
+    plt.plot(xRange,Sigmas[0][39],'m-p',label='T = 4.0')
+    plt.plot(xRange,Sigmas[0][49],'g-h',label='T = 5.0')
+    plt.title('Error of the Energy vs Block Size')
+    plt.xlabel('Block Size')
+    plt.ylabel('$\sigma$')
+    plt.xlim(0,len(xRange))
+    fig.tight_layout()
+    plt.legend(loc='best')
+    plt.show()
+    
+    fig = plt.figure(5)
+    plt.plot(xRange,Sigmas[1][0],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[1][9],'r-o',label='T = 1.0')
+    plt.plot(xRange,Sigmas[1][19],'k-^',label='T = 2.0')
+    plt.plot(xRange,Sigmas[1][29],'c-s',label='T = 3.0')
+    plt.plot(xRange,Sigmas[1][39],'m-p',label='T = 4.0')
+    plt.plot(xRange,Sigmas[1][49],'g-h',label='T = 5.0')
+    plt.title('Error of the Magnetization vs Block Size')
+    plt.xlabel('Block Size')
+    plt.ylabel('$\sigma$')
+    plt.xlim(0,len(xRange))
+    fig.tight_layout()
+    plt.legend(loc='best')
+    plt.show()
+    
+#    for i in range(50):
+#        plt.plot(xRange,Sigmas[1][i],label='T = ' + str((1+i)/10))
+#    plt.legend(loc='best',prop={'size':8})
     
     fig = plt.figure(1)
     plt.errorbar(T,M,yerr=np.sqrt(np.var(M)/sweeps),fmt='b-*',label='Data')
@@ -161,22 +222,53 @@ def RS():
     input("Hit ENTER ...")
     plt.close()
     
-    fig = plt.figure(2)
-    plt.plot(range(len(c_e[0])),c_e[0],'b-*',label='T = 0.1')
-    plt.plot(range(len(c_e[0])),c_e[9],'r-o',label='T = 1.0')
-    plt.plot(range(len(c_e[0])),c_e[19],'k-^',label='T = 2.0')
-    plt.plot(range(len(c_e[0])),c_e[29],'c-s',label='T = 3.0')
-    plt.plot(range(len(c_e[0])),c_e[39],'m-p',label='T = 4.0')
-    plt.title('ACF of Energy')
-    plt.xlabel('Time Step')
-    plt.ylabel('ACF Value')
-    plt.xlim(0,len(c_e[0]))
-    fig.tight_layout()
+    '''
+    Since we now have the blocking, it would be useful to recall the array arrangements here
+    As you can see, we now need to apply the blocking to the M matrix so we can apply the coorect
+    error. So here we can recalculate all the magnetizations blocked and then append their means
+    to the M matrix. 
+    '''
+#   Naive blocked errors as it has just picked the 100th step which seems ok for the most part.
+    
+    BlockedSigmas = np.array(Sigmas)[1,:,45]
+    
+    Sigmas = np.array(Sigmas)
+    Positions = []
+    PercentDifference = .0025
+    for t in range(len(Sigmas[1])):
+        for i in range(len(Sigmas[1][0])):
+            if Sigmas[1][t][i] >= Sigmas[1][t][i-1]*(1-PercentDifference) and\
+                 Sigmas[1][t][i] <= Sigmas[1][t][i-1]*(1+PercentDifference) and\
+                 Sigmas[1][t][i] >= Sigmas[1][t][i+1]*(1-PercentDifference) and\
+                 Sigmas[1][t][i] <= Sigmas[1][t][i+1]*(1+PercentDifference):
+                     Positions.append(i)
+                     break
+
+    BlockedSigmas2 = [Sigmas[1,i,j] for i,j in enumerate(Positions)]
+    
+    fig = plt.figure(6)
+    plt.errorbar(T,M,yerr=BlockedSigmas,fmt='b-o',label='Naiive Blocking Choice')
+    plt.errorbar(T,M,yerr=BlockedSigmas2,fmt='r-o',label='Individual Blocking Choice')
+    plt.title('Magnetization vs Temperature')
+    plt.xlabel('Temperature')
+    plt.ylabel('Magnetization')
     plt.legend(loc='best')
-    plt.draw()
-    plt.pause(1)
-    input("Hit ENTER ...")
-    plt.close()
+    fig.tight_layout()
+    plt.show()
+    
+#    fig = plt.figure(2)
+#    plt.plot(range(len(c_e[0])),c_e[0],'b-*',label='T = 0.1')
+#    plt.plot(range(len(c_e[0])),c_e[9],'r-o',label='T = 1.0')
+#    plt.plot(range(len(c_e[0])),c_e[19],'k-^',label='T = 2.0')
+#    plt.plot(range(len(c_e[0])),c_e[29],'c-s',label='T = 3.0')
+#    plt.plot(range(len(c_e[0])),c_e[39],'m-p',label='T = 4.0')
+#    plt.title('ACF of Energy')
+#    plt.xlabel('Time Step')
+#    plt.ylabel('ACF Value')
+#    plt.xlim(0,len(c_e[0]))
+#    fig.tight_layout()
+#    plt.legend(loc='best')
+#    plt.show()
     
     #fig = plt.figure(3)
     #plt.plot(range(len(c_m[0])),c_m[0],'b-*',label='T = 0.1')
@@ -191,8 +283,9 @@ def RS():
     #fig.tight_layout()
     #plt.legend(loc='best')
     #plt.show()
+
+
     
-#    np.savetxt('ACF_Array.txt',c_e)
 
 print("You may choose a random or systematic sweep by typing RS() or SS() \nBut I'm just gonna run RS()")
 
