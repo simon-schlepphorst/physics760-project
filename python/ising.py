@@ -217,10 +217,7 @@ def RS():
     plt.xlabel('Temperature')
     plt.ylabel('Magnetization')
     fig.tight_layout()
-    plt.draw()
-    plt.pause(1)
-    input("Hit ENTER ...")
-    plt.close()
+    plt.show()
     
     '''
     Since we now have the blocking, it would be useful to recall the array arrangements here
