@@ -100,6 +100,59 @@ def init_energy(spin_array, lattice):
 def init_mag(spin_array, lattice):
     return abs(sum(sum(spin_array))) / (lattice ** 2)
 
+def make_cluster(spin_array, lattice, x, y, temperature):
+    Origin = [x,y]
+    Cluster = [(x,y)]
+    i = 1
+    while True:
+        neighbors = find_neighbors(spin_array, lattice,Origin[0],Origin[1])
+        L,R,T,B = neighbors[0],neighbors[1],neighbors[2],neighbors[3]
+        try:
+            if i >= 5 and i >= len(Cluster) and Origin == [Cluster[-2][0],Cluster[-2][1]]:
+                break
+        except IndexError:
+            break
+        while True:
+            OriginalSpin = spin_array[Origin[0], Origin[1]]
+            if OriginalSpin == L and 1. - np.exp(-2.0/temperature) > random.random() and \
+                                                ((Origin[0], Origin[1] - 1) not in Cluster):
+                Cluster.append((Origin[0], Origin[1] - 1))
+            if OriginalSpin == R and 1. - np.exp(-2.0/temperature) > random.random() and \
+                                                ((Origin[0], (Origin[1] + 1) % lattice)):
+                Cluster.append((Origin[0], (Origin[1] + 1) % lattice) not in Cluster)
+            if OriginalSpin == T and 1. - np.exp(-2.0/temperature) > random.random() and \
+                                                ((Origin[0]-1, Origin[1]) not in Cluster):
+                Cluster.append((Origin[0]-1, Origin[1]))
+            if OriginalSpin == B and 1. - np.exp(-2.0/temperature) > random.random() and \
+                                                (((Origin[0] + 1) % lattice, Origin[1]) not in Cluster):
+                Cluster.append(((Origin[0] + 1) % lattice, Origin[1]))
+            try:
+                Origin = [Cluster[i][0],Cluster[i][1]]
+            except IndexError:
+                Origin = [Cluster[-2][0],Cluster[-2][1]]
+            i +=1
+            break
+    return Cluster
+
+def cluster_merge(lists):
+    modlist = []
+    for i in range(len(lists)):
+        modlist.append(set(lists[i]))
+    while True:
+        for set1,set2 in itertools.combinations(modlist,2):
+            try:
+                index1 = modlist.index(set1)
+            except ValueError:
+                break
+            print(set1,set2,index1)
+            if not set1.isdisjoint(set2):
+                modlist[index1] = set1.union(set2)
+                modlist.remove(set2)
+        else:
+            break
+    return modlist
+
+
 #Plot parameters
 cmap = mpl.colors.ListedColormap(['black','white'])
 bounds=[-1,0,1]
