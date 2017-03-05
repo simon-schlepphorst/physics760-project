@@ -7,7 +7,35 @@ import matplotlib as mpl
 import os
 import tqdm
 
+###############################################################################
+#           Global variables                                                  #
+###############################################################################
+
+
+#Plot parameters
 mpl.rcParams.update({'font.size': 22})
+cmap = mpl.colors.ListedColormap(['black','white'])
+bounds=[-1,0,1]
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+
+lattice = int(input("Enter lattice size [8]: ") or 8)
+sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
+ACFTime = int(input("Enter the time for ACF to run over [500]: ") or 500)
+choice = str(input("Choose array to start with (hot/cold/[random]): ") or "random")
+RELAX_SWEEPS = int(sweeps/100)
+Et = np.zeros((50,sweeps + RELAX_SWEEPS))
+Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
+
+
+if os.path.isdir('Images') is False:
+    os.mkdir('Images')
+
+
+###############################################################################
+#           Lattice generation and simple functions                           #
+###############################################################################
+
 
 def init_spin_array(N,choice):
     if choice == 'random':
@@ -153,25 +181,6 @@ def cluster_merge(lists):
     return modlist
 
 
-#Plot parameters
-cmap = mpl.colors.ListedColormap(['black','white'])
-bounds=[-1,0,1]
-norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-
-
-lattice = int(input("Enter lattice size [8]: ") or 8)
-sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
-ACFTime = int(input("Enter the time for ACF to run over [500]: ") or 500)
-choice = str(input("Choose array to start with (hot/cold/[random]): ") or "random")
-RELAX_SWEEPS = int(sweeps/100)
-Et = np.zeros((50,sweeps + RELAX_SWEEPS))
-Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
-
-
-if os.path.isdir('Images') is False:
-    os.mkdir('Images')
-
-
 #Systematic Sweeping (going pooint by point in order
 def SS():
     for temperature in np.arange(0.1, 5.0, 0.1):
@@ -196,6 +205,7 @@ def SS():
         print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
 
 #Random order Sweeping:
+#TODO this superfunction needs refactoring
 def RS():
     save_n = sweeps//100 #Saves Array every 10 Sweeps
     T = []
@@ -370,8 +380,11 @@ def RS():
     #plt.show()
 
 
-    
+###############################################################################
+#           Execute some stuff if directly called                             #
+###############################################################################
 
-print("You may choose a random or systematic sweep by typing RS() or SS() \nBut I'm just gonna run RS()")
+if __name__ == "__main__":
+    print("You may choose a random or systematic sweep by typing RS() or SS() \nBut I'm just gonna run RS()")
 
-RS()
+    RS()
