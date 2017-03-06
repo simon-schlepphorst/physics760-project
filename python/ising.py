@@ -7,6 +7,8 @@ import matplotlib as mpl
 import os
 import tqdm
 
+import configparser
+
 ###############################################################################
 #           Global variables                                                  #
 ###############################################################################
@@ -18,11 +20,53 @@ cmap = mpl.colors.ListedColormap(['black','white'])
 bounds=[-1,0,1]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
+def load_config(filename):
+    config = configparser.ConfigParser()
+    config.read(filename)
 
-lattice = int(input("Enter lattice size [8]: ") or 8)
-sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
-ACFTime = int(input("Enter the time for ACF to run over [500]: ") or 500)
-choice = str(input("Choose array to start with (hot/cold/[random]): ") or "random")
+    #read options
+    try:
+        lattice_N = eval(config['lattice']['size'])
+        lattice_state = config['lattice'].get('state')
+        if not lattice_state in ('hot', 'cold', 'random'):
+            raise ValueError(lattice_state)
+        #currently not in use
+        lattice_J = config['lattice'].getint('interaction strength')
+
+        mc_sweeps = config['markov chain'].getint('sweeps')
+        mc_start = config['markov chain'].getint('start')
+        mc_temp = config.getfloat('markov chain', 'temperature')
+        mc_alg = config.get('markov chain', 'algorithm')
+        if not mc_alg in ('Monte Carlo'):
+            raise ValueError(mc_alg)
+
+        save_vol = config.getint('save', 'volume')
+        save_pic = config.getboolean('save', 'pictures')
+        save_lat = config.getboolean('save', 'lattice')
+    except:
+        print("Ooops. Some config is rotten in the state of Denmark.")
+        raise
+
+    #translate options
+    global lattice
+    lattice = lattice_N[0] #TODO prepare rest of code for tuples
+    global sweeps
+    sweeps = mc_sweeps
+    global ACFTime
+    ACFTime = 500
+    global choice
+    choice = lattice_state
+
+
+# Read values from config if exist
+if os.path.isfile("config.ini"):
+    load_config("config.ini")
+else:
+    lattice = int(input("Enter lattice size [8]: ") or 8)
+    sweeps = int(input("Enter the number of Monte Carlo Sweeps [25000]: ") or 25000)
+    ACFTime = int(input("Enter the time for ACF to run over [500]: ") or 500)
+    choice = str(input("Choose array to start with (hot/cold/[random]): ") or "random")
+
 RELAX_SWEEPS = int(sweeps/100)
 Et = np.zeros((50,sweeps + RELAX_SWEEPS))
 Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
