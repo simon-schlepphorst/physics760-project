@@ -308,6 +308,14 @@ def RS():
             M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
             bar.update()
         
+###############################################################################
+#           Crunch the numbers                                                #
+###############################################################################
+#TODO Calculation of the results should happen in extra function
+#     so reading runs from file is supported
+
+
+
 #    print("Getting ACF Function...\n")
 #    c_e = ACF(Et,ACFTime)
 #    c_m = ACF(Mt,ACFTime)
