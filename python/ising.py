@@ -336,29 +336,29 @@ def RS():
 
             if e <= 0:
                 spin_array[point] *= -1
-                continue
             elif np.exp((-1.0 * e)/temperature) > random.random():
                 spin_array[point] *= -1
-                continue
 
             OrientF = spin_array[point]
             mag[sweep] = abs(np.sum(spin_array)) / len(spin_array.flatten())
 
             if sweep == 0:
-                Et[int(temperature*10 - 1)][0] = E
+                Et[int(temperature*10 - 1)][0] = E[0]
+                E[sweep+1] = E[sweep]
 
             #n_step_pic(temperature,sweep,spin_array,steps)
 
             if OrientF == OrientI and sweep != 0:
                 Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
+                E[sweep+1] = E[sweep]
             if OrientF != OrientI and sweep != 0:
                 Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
+                E[sweep+1] = E[sweep] + e
 
             Mt[int(temperature*10 - 1),sweep] = mag[sweep]
 
             #updating the array-lists for the next sweep
             lat_list[sweep+1] = spin_array
-            E[sweep+1] = E[sweep] + e
             T[sweep+1] = T[sweep]
             M[sweep+1] = M[sweep] #FIXME not sure about this one was:
             #M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
