@@ -26,6 +26,9 @@ def load_config(filename):
 
     #read options
     try:
+        global lattice_N
+        global lattice_state
+        global lattice_J
         lattice_N = eval(config['lattice']['size'])
         lattice_state = config['lattice'].get('state')
         if not lattice_state in ('hot', 'cold', 'random'):
@@ -33,6 +36,7 @@ def load_config(filename):
         #currently not in use
         lattice_J = config['lattice'].getint('interaction strength')
 
+        global mc_temp
         mc_sweeps = config['markov chain'].getint('sweeps')
         mc_start = config['markov chain'].getint('start')
         mc_temp = config.getfloat('markov chain', 'temperature')
@@ -40,6 +44,9 @@ def load_config(filename):
         if not mc_alg in ('Monte Carlo'):
             raise ValueError(mc_alg)
 
+        global save_vol
+        global save_pic
+        global save_lat
         save_vol = config.getint('save', 'volume')
         save_pic = config.getboolean('save', 'pictures')
         save_lat = config.getboolean('save', 'lattice')
@@ -88,6 +95,52 @@ def init_spin_array(N,choice):
         return np.resize([1,-1],(N,N))
     elif choice == 'cold':
         return np.ones((N,N), dtype='int8')
+
+def neighbors(lattice, point):
+    '''
+    Returns a iterator of neighboars of point.
+
+    :param np.array lattice: numpy array of same number of dimensions as point
+    :param tuple point: index vector
+    :returns iter(tuple(int)): Neighbor iterator
+    '''
+    assert len(lattice.shape) == len(point)
+
+    d = len(point)
+
+    for k in range(d):
+       s = np.zeros_like(point)
+       s[k] = 1
+       yield tuple((point + s) % lattice.shape[k])
+       yield tuple((point - s) % lattice.shape[k])
+
+
+def energy_simple(lattice, j=1):
+    '''
+    Calculates the energy on a lattice
+
+    :param np.array lattice: numpy array with spins
+    :returns np.array: energies on the lattice points
+    '''
+
+    d = len(lattice.shape)
+
+    return np.sum( -j * lattice / 2 * np.sum(
+            np.roll(lattice, shift, axis)
+            for shift in [-1, 1]
+            for axis in range(d)))
+
+
+def energy_change(lattice, point, j=1):
+    '''
+    Returns the change in Energie with a spefic flipped value
+
+    :param np.array lattice: numpy array with spins
+    :param tuple flipped: index vector of spin to flip
+    :returns int: Energy change
+    '''
+    return 2 * j * lattice[point] * np.sum(
+            lattice[i] for i in neighbors(lattice, point))
 
 def find_neighbors(spin_array, lattice, x, y):
     left   = (x, y - 1)     
@@ -251,62 +304,82 @@ def SS():
 #Random order Sweeping:
 #TODO this superfunction needs refactoring
 def RS():
-    save_n = sweeps//100 #Saves Array every 10 Sweeps
-    T = []
-    M = []
-    if os.path.isdir('Saves') is False:
-        os.mkdir('Saves')
-    #steps = int(input("Enter how many steps in between images (set to 1 if every picture is wanted): "))
-    for temperature in np.arange(0.1, 5.1, 0.1):
-        if os.path.isdir('Images/T-'+str(temperature)) is True:
-            pass
-        if os.path.isdir('Images/T-'+str(temperature)) is False:
-            os.mkdir('Images/T-'+str(temperature))
-        if os.path.isdir('Saves/T-'+str(temperature)) is True:
-            pass
-        if os.path.isdir('Saves/T-'+str(temperature)) is False:
-            os.mkdir('Saves/T-'+str(temperature))
-        spin_array = init_spin_array(lattice,choice)
-        E = init_energy(spin_array, lattice)
-        mag = np.zeros(sweeps + RELAX_SWEEPS)
-        with tqdm.tqdm(desc= 'T='+str(temperature), total=sweeps + RELAX_SWEEPS,  dynamic_ncols=True) as bar:
-            for sweep, save in zip(range(sweeps + RELAX_SWEEPS), itertools.cycle((save_n-1)*[False] + [True])):
-                bar.update()
-                ii = random.randint(0,lattice-1)
-                jj = random.randint(0,lattice-1)
-                e = energy(spin_array, lattice, ii, jj)
-                OrientI = spin_array[ii,jj]
+    total_sweeps = sweeps + RELAX_SWEEPS
 
-                if e <= 0:
-                    spin_array[ii, jj] *= -1
-                    continue
-                elif np.exp((-1.0 * e)/temperature) > random.random():
-                    spin_array[ii, jj] *= -1
-                    continue
+    #initialize list with easy to spot values
+    T = np.array([np.nan]*total_sweeps)
+    M = np.array([np.nan]*total_sweeps)
 
-                OrientF = spin_array[ii,jj]
-                mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
+    #creaty list of lattice and initialize first one
+    lat_list = np.array([np.zeros(lattice_N, dtype=np.int8) for _ in range(total_sweeps)])
+    lat_list[0] = init_spin_array(lattice, choice)
 
-                if sweep == 0:
-                    Et[int(temperature*10 - 1)][0] = E
+    E = np.array([np.nan]*total_sweeps)
+    E[0] = init_energy(lat_list[0], lattice)
+    spin_array = lat_list[0]
 
-                #n_step_pic(temperature,sweep,spin_array,steps)
-
-                if OrientF == OrientI and sweep != 0:
-                    Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
-                if OrientF != OrientI and sweep != 0:
-                    Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
-
-                Mt[int(temperature*10 - 1),sweep] = mag[sweep]
-
-                if save:
-                    save_array('Saves/T-'+str(temperature), spin_array, sweep, T=0, E=0, M=0, A=0)
-                    #TODO feed the right values for temperature etc.
-
-            #print("Temp ",[temperature], "and Mag ",[sum(mag[RELAX_SWEEPS:]) / sweeps]," Appending...\n")
-            T.append(temperature)
-            M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
+    mag = np.zeros(total_sweeps)
+    temperature = mc_temp #use temperature from config file
+    T[0] = temperature
+    with tqdm.tqdm(desc= 'T='+str(temperature), total=total_sweeps,  dynamic_ncols=True) as bar:
+        for sweep in range(total_sweeps - 1):
             bar.update()
+            T[sweep] = temperature
+            # if the lattice has a strange size point will still be inside
+            point = []
+            for i in range(len(lattice_N)):
+                point.append(np.random.randint(0, lattice_N[i]))
+            point = tuple(point)
+
+            e = energy_change(spin_array, point, j=lattice_J)
+            OrientI = spin_array[point]
+
+            if e <= 0:
+                spin_array[point] *= -1
+                continue
+            elif np.exp((-1.0 * e)/temperature) > random.random():
+                spin_array[point] *= -1
+                continue
+
+            OrientF = spin_array[point]
+            mag[sweep] = abs(np.sum(spin_array)) / len(spin_array.flatten())
+
+            if sweep == 0:
+                Et[int(temperature*10 - 1)][0] = E
+
+            #n_step_pic(temperature,sweep,spin_array,steps)
+
+            if OrientF == OrientI and sweep != 0:
+                Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
+            if OrientF != OrientI and sweep != 0:
+                Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
+
+            Mt[int(temperature*10 - 1),sweep] = mag[sweep]
+
+            #updating the array-lists for the next sweep
+            lat_list[sweep+1] = spin_array
+            E[sweep+1] = E[sweep] + e
+            T[sweep+1] = T[sweep]
+            M[sweep+1] = M[sweep] #FIXME not sure about this one was:
+            #M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
+        bar.update()
+
+    with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
+        if save_lat:
+            np.savez_compressed("save", lat=lat_list, T=T, E=E, M=M)
+        bar.update()
+
+        '''to reload the save
+        with open('save.npz') as f:
+            f_npz = np.load(f)
+            lat_list = f_npz['lat']
+            T=f_npz['T']
+            E=f_npz['E']
+            M=f_npz['M']
+        '''
+
+        #end here becaue rewriting this function broke stuff for sure and saving is in place now.
+        return
         
 ###############################################################################
 #           Crunch the numbers                                                #
