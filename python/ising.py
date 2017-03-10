@@ -219,8 +219,8 @@ def init_energy(spin_array, lattice):
     E = np.zeros_like(spin_array)
     for x in range(lattice):
         for y in range(lattice):
-            E[x,y] = 2 * spin_array[x, y] * sum(find_neighbors(spin_array, lattice, x, y))
-    return E.mean()
+            E[x,y] = - 1/2 * spin_array[x, y] * sum(find_neighbors(spin_array, lattice, x, y))
+    return np.sum(E)
 
 def init_mag(spin_array, lattice):
     return abs(sum(sum(spin_array))) / (lattice ** 2)
