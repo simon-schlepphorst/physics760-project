@@ -438,16 +438,17 @@ def load_sim():
 
     # Read values from save if exist
     if os.path.isfile("save.npz"):
-        load_config("save.npz")
+        try:
+            f_npz = np.load('save.npz')
+            lat_list = f_npz['lat']
+            T=f_npz['T']
+            E=f_npz['E']
+            M=f_npz['M']
+        except:
+            raise
     else:
         raise FileNotFoundError
 
-    with open('save.npz') as f:
-        f_npz = np.load(f)
-        lat_list = f_npz['lat']
-        T=f_npz['T']
-        E=f_npz['E']
-        M=f_npz['M']
 
     #FIXME Glue Code to get the names right
     raise NotImplementedError
