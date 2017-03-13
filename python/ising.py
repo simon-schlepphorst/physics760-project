@@ -229,76 +229,74 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 #           Run simulations                                                   #
 ###############################################################################
 
+def load_config(filename, parameters):
+    '''loads and parses a given config file
+
+    :param filename: filename
+    :param dict parameters: dictionary to fill values in
+    '''
+    config = configparser.ConfigParser()
+    config.read(filename)
+
+    #read options
+    try:
+        parameters['lattice_size'] = eval(config['lattice']['size'])
+        parameters['lattice_state'] = config['lattice'].get('state')
+        if not parameters['lattice_state'] in ('hot', 'cold', 'random'):
+            raise ValueError(parameters['lattice_state'])
+        #currently not in use
+        parameters['lattice_interaction'] = config['lattice'].getint('interaction strength')
+
+        parameters['mc_sweeps'] = config['markov chain'].getint('sweeps')
+        parameters['mc_start'] = config['markov chain'].getint('start')
+        parameters['mc_temp'] = config.getfloat('markov chain', 'temperature')
+        parameters['mc_algorithm'] = config.get('markov chain', 'algorithm')
+        if not parameters['mc_algorithm'] in ('Monte Carlo', 'Cluster'):
+            raise ValueError(parameters['mc_algorithm'])
+
+        parameters['save_vol'] = config.getint('save', 'volume')
+        parameters['save_pic'] = config.getboolean('save', 'pictures')
+        parameters['save_lat'] = config.getboolean('save', 'lattice')
+    except:
+        print("Ooops. Some config is rotten in the state of Denmark.")
+        raise
+
 def run_sim():
     '''run simulation from config
     '''
-    def load_config(filename):
-        config = configparser.ConfigParser()
-        config.read(filename)
-
-        #read options
-        try:
-            nonlocal lattice_N
-            nonlocal lattice_state
-            nonlocal lattice_J
-            lattice_N = eval(config['lattice']['size'])
-            lattice_state = config['lattice'].get('state')
-            if not lattice_state in ('hot', 'cold', 'random'):
-                raise ValueError(lattice_state)
-            #currently not in use
-            lattice_J = config['lattice'].getint('interaction strength')
-
-            nonlocal mc_temp
-            nonlocal mc_sweeps
-            nonlocal mc_alg
-            mc_sweeps = config['markov chain'].getint('sweeps')
-            mc_start = config['markov chain'].getint('start')
-            mc_temp = config.getfloat('markov chain', 'temperature')
-            mc_alg = config.get('markov chain', 'algorithm')
-            if not mc_alg in ('Monte Carlo', 'Cluster'):
-                raise ValueError(mc_alg)
-
-            nonlocal save_vol
-            nonlocal save_pic
-            nonlocal save_lat
-            save_vol = config.getint('save', 'volume')
-            save_pic = config.getboolean('save', 'pictures')
-            save_lat = config.getboolean('save', 'lattice')
-        except:
-            print("Ooops. Some config is rotten in the state of Denmark.")
-            raise
-
-    # Create names to load variables in
-    lattice_N = np.nan
-    lattice_state = np.nan
-    lattice_J = np.nan
-    mc_temp = np.nan
-    mc_sweeps = np.nan
-    mc_alg = np.nan
-    save_vol = np.nan
-    save_pic = np.nan
-    save_lat = np.nan
+    parameters = {} #dictionary to store the values of the config file
 
     # Read values from config if exist
     if os.path.isfile("config.ini"):
-        load_config("config.ini")
+        load_config("config.ini", parameters)
     else:
         raise FileNotFoundError
 
-    #translate options for legacy reasons
-    lattice = lattice_N[0] #TODO prepare rest of code for tuples
-    sweeps = mc_sweeps
-    ACFTime = 500
-    choice = lattice_state
+    #translate options for legacy reasons --->
+    lattice_N = parameters['lattice_size']
+    lattice_state = parameters['lattice_state']
+    lattice_J = parameters['lattice_interaction']
+    mc_temp = parameters['mc_temp']
+    mc_sweeps = parameters['mc_sweeps']
+    mc_alg = parameters['mc_algorithm']
+    save_vol = parameters['save_vol']
+    save_pic = parameters['save_pic']
+    save_lat = parameters['save_lat']
 
+    lattice = parameters['lattice_size'][0] #TODO prepare rest of code for tuples
+    sweeps = parameters['mc_sweeps']
+    ACFTime = 500
+    choice = parameters['lattice_state']
 
     RELAX_SWEEPS = int(sweeps/100)
     Et = np.zeros((50,sweeps + RELAX_SWEEPS))
     Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
+    #<--- FIXME
 
-
-    #Systematic Sweeping (going pooint by point in order) 
-    def SS():
+    def SS(parameters):
+        ''' Systematic Sweeping (going pooint by point in order)
+        :param dict parameters: dictionary with paramters
+        '''
         for temperature in np.arange(0.1, 5.0, 0.1):
             if os.path.isdir('Images/T-'+str(temperature)) is True:
                 pass
@@ -322,7 +320,11 @@ def run_sim():
 
     #Random order Sweeping:
     #TODO this superfunction needs refactoring
-    def RS():
+    def RS(parameters):
+        ''' Random order sweeping
+        :param dict parameters: dictionary with parameters
+        '''
+
         total_sweeps = sweeps + RELAX_SWEEPS
 
         #initialize list with easy to spot values
@@ -388,17 +390,8 @@ def run_sim():
                 np.savez_compressed("save", lat=lat_list, T=T, E=E, M=M)
             bar.update()
 
-            '''to reload the save
-            with open('save.npz') as f:
-                f_npz = np.load(f)
-                lat_list = f_npz['lat']
-                T=f_npz['T']
-                E=f_npz['E']
-                M=f_npz['M']
-            '''
-
     if (mc_alg == 'Monte Carlo'):
-        RS()
+        RS(parameters)
     elif (mc_alg == 'Cluster'):
         #TODO finish Cluster algorithm
         pass
@@ -411,68 +404,34 @@ def run_sim():
 def load_sim():
     '''load simulation
     '''
-    def load_config(filename):
-        config = configparser.ConfigParser()
-        config.read(filename)
-
-        #read options
-        try:
-            nonlocal lattice_N
-            nonlocal lattice_state
-            nonlocal lattice_J
-            lattice_N = eval(config['lattice']['size'])
-            lattice_state = config['lattice'].get('state')
-            if not lattice_state in ('hot', 'cold', 'random'):
-                raise ValueError(lattice_state)
-            #currently not in use
-            lattice_J = config['lattice'].getint('interaction strength')
-
-            nonlocal mc_temp
-            nonlocal mc_sweeps
-            nonlocal mc_alg
-            mc_sweeps = config['markov chain'].getint('sweeps')
-            mc_start = config['markov chain'].getint('start')
-            mc_temp = config.getfloat('markov chain', 'temperature')
-            mc_alg = config.get('markov chain', 'algorithm')
-            if not mc_alg in ('Monte Carlo'):
-                raise ValueError(mc_alg)
-
-            nonlocal save_vol
-            nonlocal save_pic
-            nonlocal save_lat
-            save_vol = config.getint('save', 'volume')
-            save_pic = config.getboolean('save', 'pictures')
-            save_lat = config.getboolean('save', 'lattice')
-        except:
-            print("Ooops. Some config is rotten in the state of Denmark.")
-            raise
-
-    # Create names to load variables in
-    lattice_N = np.nan
-    lattice_state = np.nan
-    lattice_J = np.nan
-    mc_temp = np.nan
-    mc_sweeps = np.nan
-    mc_alg = np.nan
-    save_vol = np.nan
-    save_pic = np.nan
-    save_lat = np.nan
+    parameters = {} #dictionary to store the values of the config file
 
     # Read values from config if exist
     if os.path.isfile("config.ini"):
-        load_config("config.ini")
+        load_config("config.ini", parameters)
     else:
         raise FileNotFoundError
 
-    #translate options for legacy reasons
-    lattice = lattice_N[0] #TODO prepare rest of code for tuples
-    sweeps = mc_sweeps
+    #translate options for legacy reasons --->
+    lattice_N = parameters['lattice_size']
+    lattice_state = parameters['lattice_state']
+    lattice_J = parameters['lattice_interaction']
+    mc_temp = parameters['mc_temp']
+    mc_sweeps = parameters['mc_sweeps']
+    mc_alg = parameters['mc_algorithm']
+    save_vol = parameters['save_vol']
+    save_pic = parameters['save_pic']
+    save_lat = parameters['save_lat']
+
+    lattice = parameters['lattice_size'][0] #TODO prepare rest of code for tuples
+    sweeps = parameters['mc_sweeps']
     ACFTime = 500
-    choice = lattice_state
+    choice = parameters['lattice_state']
 
     RELAX_SWEEPS = int(sweeps/100)
     Et = np.zeros((50,sweeps + RELAX_SWEEPS))
     Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
+    #<--- FIXME
 
     # Read values from save if exist
     if os.path.isfile("save.npz"):
