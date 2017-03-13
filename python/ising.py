@@ -310,6 +310,19 @@ def RS(parameters):
             np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A)
         bar.update()
 
+def CS(parameters):
+    ''' Swendsen-Wang Cluster algorithm
+
+    :saves lattice, ..., cluster list:
+    '''
+    raise NotImplementedError
+
+    with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
+        if parameters['save_lat']:
+            np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A)
+        bar.update()
+
+
 def load_config(dirname, parameters):
     '''loads and parses a given config file
 
@@ -384,8 +397,7 @@ def run_sim(dirname):
     if (parameters['mc_algorithm'] == 'Monte Carlo'):
         RS(parameters)
     elif (parameters['mc_algorithm'] == 'Cluster'):
-        #TODO finish Cluster algorithm
-        pass
+        CS(parameters)
 
 ###############################################################################
 #           Crunch the numbers                                                #
