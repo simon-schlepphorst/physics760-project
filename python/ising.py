@@ -5,6 +5,7 @@ import random
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 import os
+import sys
 import tqdm
 
 import configparser
@@ -261,14 +262,17 @@ def load_config(filename, parameters):
         print("Ooops. Some config is rotten in the state of Denmark.")
         raise
 
-def run_sim():
+def run_sim(dirname):
     '''run simulation from config
+    :param str dirname: directory to load the config from
+    :output file: saves numpy arrays in given directory
     '''
+
     parameters = {} #dictionary to store the values of the config file
 
     # Read values from config if exist
-    if os.path.isfile("config.ini"):
-        load_config("config.ini", parameters)
+    if os.path.isfile(os.path.join(dirname, "config.ini")):
+        load_config(os.path.join(dirname, "config.ini"), parameters)
     else:
         raise FileNotFoundError
 
@@ -401,8 +405,10 @@ def run_sim():
 ###############################################################################
     #TODO Calculation of the results should happen in extra function
     #     so reading runs from file is supported
-def load_sim():
+def load_sim(dirname):
     '''load simulation
+    :param str dirname: directory to load the simulation from
+    :return dict dictionary: dictionary containing the results for given simualtion
     '''
     parameters = {} #dictionary to store the values of the config file
 
@@ -572,5 +578,10 @@ def load_sim():
 ###############################################################################
 
 if __name__ == "__main__":
-    run_sim()
+
+    if (len(sys.argv) == 2) and (os.path.isfile(sys.argv[1])):
+        dirname = os.path.dirname(sys.argv[1])
+        run_sim(dirname)
+    else:
+        print("Stupid you, didn't gave me a config.ini")
 
