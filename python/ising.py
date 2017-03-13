@@ -156,11 +156,14 @@ def init_energy(spin_array, lattice):
 def init_mag(spin_array, lattice):
     return abs(sum(sum(spin_array))) / (lattice ** 2)
 
-def make_cluster(spin_array, lattice, x, y, temperature):
+def make_cluster(spin_array, lattice, N, temperature):
     '''
     This function makes one cluster out of a starting point. 
     That is to say it outputs a [list] with all the points in the cluster    
     '''
+    assert len(N) == 2
+    x, y = N
+
     Origin = [x,y]
     Cluster = [(x,y)]
     i = 1
