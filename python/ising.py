@@ -302,26 +302,6 @@ def run_sim(dirname):
     else:
         raise FileNotFoundError
 
-    #translate options for legacy reasons --->
-    lattice_N = parameters['lattice_size']
-    lattice_state = parameters['lattice_state']
-    lattice_J = parameters['lattice_interaction']
-    mc_temp = parameters['mc_temp']
-    mc_sweeps = parameters['mc_sweeps']
-    mc_alg = parameters['mc_algorithm']
-    save_vol = parameters['save_vol']
-    save_pic = parameters['save_pic']
-    save_lat = parameters['save_lat']
-
-    lattice = parameters['lattice_size'][0] #TODO prepare rest of code for tuples
-    sweeps = parameters['mc_sweeps']
-    ACFTime = 500
-    choice = parameters['lattice_state']
-
-    RELAX_SWEEPS = int(sweeps/100)
-    Et = np.zeros((50,sweeps + RELAX_SWEEPS))
-    Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
-    #<--- FIXME
 
     def SS(parameters):
         ''' Systematic Sweeping (going pooint by point in order)
