@@ -441,29 +441,20 @@ def load_sim(dirname):
         M = data['M']
         A = data['A']
 
-
-    #FIXME Glue Code to get the names right
-    raise NotImplementedError
-
-
-    #    print("Getting ACF Function...\n")
-    #    c_e = ACF(Et,ACFTime)
-    #    c_m = ACF(Mt,ACFTime)
-    #
-    #    print("ACF Function Complete\n")
-
     print("Finding Errors via Blocking\n")
     
-    xRange = [i for i in range(1,500)]
-    Sigmas = [MeanBlock(Et,500),MeanBlock(Mt,500)]
+    Sigmas = [MeanBlock(E,500),MeanBlock(M,500)]
+    xRange = [i+1 for i in range(len(Sigmas[0]))]
+
+    mask=np.isfinite(Sigmas)
     
     fig = plt.figure(4)
-    plt.plot(xRange,Sigmas[0][0],'b-*',label='T = 0.1')
-    plt.plot(xRange,Sigmas[0][9],'r-o',label='T = 1.0')
-    plt.plot(xRange,Sigmas[0][19],'k-^',label='T = 2.0')
-    plt.plot(xRange,Sigmas[0][29],'c-s',label='T = 3.0')
-    plt.plot(xRange,Sigmas[0][39],'m-p',label='T = 4.0')
-    plt.plot(xRange,Sigmas[0][49],'g-h',label='T = 5.0')
+    plt.plot(xRange,Sigmas[0],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[0],'r-o',label='T = 1.0')
+    plt.plot(xRange,Sigmas[0],'k-^',label='T = 2.0')
+    plt.plot(xRange,Sigmas[0],'c-s',label='T = 3.0')
+    plt.plot(xRange,Sigmas[0],'m-p',label='T = 4.0')
+    plt.plot(xRange,Sigmas[0],'g-h',label='T = 5.0')
     plt.title('Error of the Energy vs Block Size')
     plt.xlabel('Block Size')
     plt.ylabel('$\sigma$')
@@ -473,12 +464,13 @@ def load_sim(dirname):
     plt.show()
     
     fig = plt.figure(5)
-    plt.plot(xRange,Sigmas[1][0],'b-*',label='T = 0.1')
-    plt.plot(xRange,Sigmas[1][9],'r-o',label='T = 1.0')
-    plt.plot(xRange,Sigmas[1][19],'k-^',label='T = 2.0')
-    plt.plot(xRange,Sigmas[1][29],'c-s',label='T = 3.0')
-    plt.plot(xRange,Sigmas[1][39],'m-p',label='T = 4.0')
-    plt.plot(xRange,Sigmas[1][49],'g-h',label='T = 5.0')
+    #plt.plot(xRange[mask[1]],Sigmas[1][mask[1]],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[1],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[1],'r-o',label='T = 1.0')
+    plt.plot(xRange,Sigmas[1],'k-^',label='T = 2.0')
+    plt.plot(xRange,Sigmas[1],'c-s',label='T = 3.0')
+    plt.plot(xRange,Sigmas[1],'m-p',label='T = 4.0')
+    plt.plot(xRange,Sigmas[1],'g-h',label='T = 5.0')
     plt.title('Error of the Magnetization vs Block Size')
     plt.xlabel('Block Size')
     plt.ylabel('$\sigma$')
@@ -491,14 +483,15 @@ def load_sim(dirname):
 #        plt.plot(xRange,Sigmas[1][i],label='T = ' + str((1+i)/10))
 #    plt.legend(loc='best',prop={'size':8})
     
-    fig = plt.figure(1)
-    plt.errorbar(T,M,yerr=np.sqrt(np.var(M)/sweeps),fmt='b-*',label='Data')
-    plt.title('Magnetization vs Temperature')
-    plt.xlabel('Temperature')
-    plt.ylabel('Magnetization')
-    fig.tight_layout()
-    plt.show()
+#    fig = plt.figure(1)
+#    plt.errorbar(T,M,yerr=np.sqrt(np.var(M)/sweeps),fmt='b-*',label='Data')
+#    plt.title('Magnetization vs Temperature')
+#    plt.xlabel('Temperature')
+#    plt.ylabel('Magnetization')
+#    fig.tight_layout()
+#    plt.show()
     
+    raise NotImplementedError
     '''
     Since we now have the blocking, it would be useful to recall the array arrangements here
     As you can see, we now need to apply the blocking to the M matrix so we can apply the coorect
