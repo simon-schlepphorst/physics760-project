@@ -136,6 +136,10 @@ def init_mag(spin_array, lattice):
     return abs(sum(sum(spin_array))) / (lattice ** 2)
 
 def make_cluster(spin_array, lattice, x, y, temperature):
+    '''
+    This function makes one cluster out of a starting point. 
+    That is to say it outputs a [list] with all the points in the cluster    
+    '''
     Origin = [x,y]
     Cluster = [(x,y)]
     i = 1
@@ -170,6 +174,11 @@ def make_cluster(spin_array, lattice, x, y, temperature):
     return Cluster
 
 def cluster_merge(lists):
+    '''
+    Parameter lists: list of lists. List of clusters as lists. eg:
+        [cluster1, cluster2, ...]
+    Outputs modlist: lists of sets. List of clusters as sets.
+    '''
     modlist = []
     for i in range(len(lists)):
         modlist.append(set(lists[i]))
@@ -186,6 +195,35 @@ def cluster_merge(lists):
         else:
             break
     return modlist
+
+def cluster_energy_change(lattice, clist, j=1):
+    '''
+    Param np.array lattice: numpy array with spins
+    Param list of 2-tuples clists: points that are members of a cluster
+    outputs energy of the entire cluster with respect to its neighbors
+    Note: This does "double count" neighbors because one point may influence
+        more than one point within the cluster.     
+    '''
+    E = []
+    for i in range(len(clist)):
+        point = clist[i]
+        neighborlist = list(neighbors(lattice, point))
+        for jloop in neighborlist:
+            if jloop in clist:
+                neighborlist.remove(jloop)
+            else:
+                pass
+        E.append(2 * j * lattice[point] * np.sum(lattice[i] for i in neighborlist))
+    return sum(E)
+
+###############################################################################
+#           Image saving parameters                                           #
+###############################################################################
+
+mpl.rcParams.update({'font.size': 22})
+cmap = mpl.colors.ListedColormap(['black','white'])
+bounds=[-1,0,1]
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 ###############################################################################
 #           Run simulations                                                   #
@@ -259,7 +297,7 @@ def run_sim():
     Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
 
 
-    #Systematic Sweeping (going pooint by point in order
+    #Systematic Sweeping (going pooint by point in order) 
     def SS():
         for temperature in np.arange(0.1, 5.0, 0.1):
             if os.path.isdir('Images/T-'+str(temperature)) is True:
@@ -452,13 +490,6 @@ def load_sim():
 
     #FIXME Glue Code to get the names right
     raise NotImplementedError
-
-    #Plot parameters
-    mpl.rcParams.update({'font.size': 22})
-    cmap = mpl.colors.ListedColormap(['black','white'])
-    bounds=[-1,0,1]
-    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-
 
 
     #    print("Getting ACF Function...\n")
