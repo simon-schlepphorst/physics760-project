@@ -28,6 +28,7 @@ def init_spin_lattice(N, start='random'):
     elif start == 'cold':
         return np.ones(N).astype(np.int8)
 
+#FIXME delete if not needed anymore
 def init_spin_array(N,choice):
     if choice == 'random':
         return np.random.choice((-1, 1), size=(N, N)).astype('int8')
@@ -146,6 +147,7 @@ def MeanBlock(array,xran):
         Sigmas.append(SigList)
     return Sigmas
 
+#FIXME marked for deletion, need to resolve dependencies
 def init_energy(spin_array, lattice):
     E = np.zeros_like(spin_array)
     for x in range(lattice):
