@@ -255,38 +255,39 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 #           Run simulations                                                   #
 ###############################################################################
 
-def load_config(filename, parameters):
+def load_config(dirname, parameters):
     '''loads and parses a given config file
 
     :param filename: filename
     :param dict parameters: dictionary to fill values in
     '''
     config = configparser.ConfigParser()
-    config.read(filename)
+    with open(os.path.join(dirname, "config.ini")) as f:
+        config.read_file(f)
 
-    #read options
-    try:
-        parameters['dirname'] = os.path.dirname(filename)
-        parameters['lattice_size'] = eval(config['lattice']['size'])
-        parameters['lattice_init'] = config['lattice'].get('state')
-        if not parameters['lattice_init'] in ('hot', 'cold', 'random'):
-            raise ValueError(parameters['lattice_init'])
-        #currently not in use
-        parameters['lattice_interaction'] = config['lattice'].getint('interaction strength')
+        #read options
+        try:
+            parameters['dirname'] = dirname
+            parameters['lattice_size'] = eval(config['lattice']['size'])
+            parameters['lattice_init'] = config['lattice'].get('init')
+            if not parameters['lattice_init'] in ('hot', 'cold', 'random'):
+                raise ValueError(parameters['lattice_init'])
+            #currently not in use
+            parameters['lattice_interaction'] = config['lattice'].getint('interaction')
 
-        parameters['mc_sweeps'] = config['markov chain'].getint('sweeps')
-        parameters['mc_start'] = config['markov chain'].getint('start')
-        parameters['mc_temp'] = config.getfloat('markov chain', 'temperature')
-        parameters['mc_algorithm'] = config.get('markov chain', 'algorithm')
-        if not parameters['mc_algorithm'] in ('Monte Carlo', 'Cluster'):
-            raise ValueError(parameters['mc_algorithm'])
+            parameters['mc_sweeps'] = config['markov chain'].getint('sweeps')
+            parameters['mc_start'] = config['markov chain'].getint('start')
+            parameters['mc_temp'] = config.getfloat('markov chain', 'temperature')
+            parameters['mc_algorithm'] = config.get('markov chain', 'algorithm')
+            if not parameters['mc_algorithm'] in ('Monte Carlo', 'Cluster'):
+                raise ValueError(parameters['mc_algorithm'])
 
-        parameters['save_vol'] = config.getint('save', 'volume')
-        parameters['save_pic'] = config.getboolean('save', 'pictures')
-        parameters['save_lat'] = config.getboolean('save', 'lattice')
-    except:
-        print("Ooops. Some config is rotten in the state of Denmark.")
-        raise
+            parameters['save_vol'] = config.getint('save', 'volume')
+            parameters['save_pic'] = config.getboolean('save', 'pictures')
+            parameters['save_lat'] = config.getboolean('save', 'lattice')
+        except:
+            print("Ooops. Some config is rotten in the state of Denmark.")
+            raise
 
 def run_sim(dirname):
     '''run simulation from config
@@ -295,12 +296,7 @@ def run_sim(dirname):
     '''
 
     parameters = {} #dictionary to store the values of the config file
-
-    # Read values from config if exist
-    if os.path.isfile(os.path.join(dirname, "config.ini")):
-        load_config(os.path.join(dirname, "config.ini"), parameters)
-    else:
-        raise FileNotFoundError
+    load_config(dirname, parameters)
 
 
     def SS(parameters):
