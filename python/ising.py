@@ -410,12 +410,7 @@ def load_sim(dirname):
     :return dict dictionary: dictionary containing the results for given simualtion
     '''
     parameters = {} #dictionary to store the values of the config file
-
-    # Read values from config if exist
-    if os.path.isfile("config.ini"):
-        load_config("config.ini", parameters)
-    else:
-        raise FileNotFoundError
+    load_config(dirname, parameters)
 
     #translate options for legacy reasons --->
     lattice_N = parameters['lattice_size']
@@ -438,18 +433,13 @@ def load_sim(dirname):
     Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
     #<--- FIXME
 
-    # Read values from save if exist
-    if os.path.isfile("save.npz"):
-        try:
-            f_npz = np.load('save.npz')
-            lat_list = f_npz['lat']
-            T=f_npz['T']
-            E=f_npz['E']
-            M=f_npz['M']
-        except:
-            raise
-    else:
-        raise FileNotFoundError
+    # Read values from save
+    with np.load(os.path.join(parameters['dirname'], 'simulation.npz')) as data:
+        lat_list = data['lat']
+        T = data['T']
+        E = data['E']
+        M = data['M']
+        A = data['A']
 
 
     #FIXME Glue Code to get the names right
