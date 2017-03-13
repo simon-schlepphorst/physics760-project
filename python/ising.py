@@ -414,7 +414,7 @@ def load_sim(dirname):
 
     #translate options for legacy reasons --->
     lattice_N = parameters['lattice_size']
-    lattice_state = parameters['lattice_state']
+    lattice_state = parameters['lattice_init']
     lattice_J = parameters['lattice_interaction']
     mc_temp = parameters['mc_temp']
     mc_sweeps = parameters['mc_sweeps']
@@ -426,7 +426,7 @@ def load_sim(dirname):
     lattice = parameters['lattice_size'][0] #TODO prepare rest of code for tuples
     sweeps = parameters['mc_sweeps']
     ACFTime = 500
-    choice = parameters['lattice_state']
+    choice = parameters['lattice_init']
 
     RELAX_SWEEPS = int(sweeps/100)
     Et = np.zeros((50,sweeps + RELAX_SWEEPS))
