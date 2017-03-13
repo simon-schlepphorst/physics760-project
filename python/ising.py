@@ -14,6 +14,19 @@ import configparser
 #           Lattice generation and simple functions                           #
 ###############################################################################
 
+def init_spin_lattice(N, start='random'):
+    '''
+    Fills a array of shape N with random choice of 1 and -1
+
+    :praram tuple N: shape of desired lattice
+    :returns np.array: ising lattice
+    '''
+    if start == 'random':
+        return np.random.choice([-1,1], N).astype(np.int8)
+    elif start == 'hot':
+        return np.resize([1,-1], N).astype(np.int8)
+    elif start == 'cold':
+        return np.ones(N).astype(np.int8)
 
 def init_spin_array(N,choice):
     if choice == 'random':
@@ -248,10 +261,11 @@ def load_config(filename, parameters):
 
     #read options
     try:
+        parameters['dirname'] = os.path.dirname(filename)
         parameters['lattice_size'] = eval(config['lattice']['size'])
-        parameters['lattice_state'] = config['lattice'].get('state')
-        if not parameters['lattice_state'] in ('hot', 'cold', 'random'):
-            raise ValueError(parameters['lattice_state'])
+        parameters['lattice_init'] = config['lattice'].get('state')
+        if not parameters['lattice_init'] in ('hot', 'cold', 'random'):
+            raise ValueError(parameters['lattice_init'])
         #currently not in use
         parameters['lattice_interaction'] = config['lattice'].getint('interaction strength')
 
@@ -336,75 +350,59 @@ def run_sim(dirname):
         :param dict parameters: dictionary with parameters
         '''
 
-        total_sweeps = sweeps + RELAX_SWEEPS
-
-        #initialize list with easy to spot values
-        T = np.array([np.nan]*total_sweeps)
-        M = np.array([np.nan]*total_sweeps)
+        sweeps = parameters['mc_sweeps']
+        J = parameters['lattice_interaction']
 
         #creaty list of lattice and initialize first one
-        lat_list = np.array([np.zeros(lattice_N, dtype=np.int8) for _ in range(total_sweeps)])
-        lat_list[0] = init_spin_array(lattice, choice)
+        lat_list = np.array([np.zeros(parameters['lattice_size'], dtype=np.int8) for _ in range(sweeps)])
+        lat_list[0] = init_spin_lattice(parameters['lattice_size'], parameters['lattice_init'])
 
-        E = np.array([np.nan]*total_sweeps)
-        E[0] = init_energy(lat_list[0], lattice)
-        spin_array = lat_list[0]
+        #initialize list with easy to spot values
+        T = np.array([parameters['mc_temp']]*sweeps)
+        E = np.array([np.nan]*sweeps)
+        M = np.array([np.nan]*sweeps)
+        A = np.array([np.nan]*sweeps)
 
-        mag = np.zeros(total_sweeps)
-        temperature = mc_temp #use temperature from config file
-        T[0] = temperature
-        with tqdm.tqdm(desc= 'T='+str(temperature), total=total_sweeps,  dynamic_ncols=True) as bar:
-            for sweep in range(total_sweeps - 1):
+        E[0] = energy_simple(lat_list[0], J)
+        M[0] = np.sum(lat_list[0])
+
+        with tqdm.tqdm(desc= 'T='+str(T[0]), total=sweeps,  dynamic_ncols=True) as bar:
+            for sweep in range(1, sweeps):
                 bar.update()
+                acceptance = 0
+                lat_list[sweep] = lat_list[sweep - 1]
+                E[sweep] = E[sweep - 1]
+                M[sweep] = M[sweep - 1]
+
                 for _ in range(len(lat_list[0].flatten())):
-                    T[sweep] = temperature
                     # if the lattice has a strange size point will still be inside
                     point = []
-                    for i in range(len(lattice_N)):
-                        point.append(np.random.randint(0, lattice_N[i]))
+                    for i in range(len(lat_list[0].shape)):
+                        point.append(np.random.randint(0, lat_list[0].shape[i]))
                     point = tuple(point)
 
-                    e = energy_change(spin_array, point, j=lattice_J)
-                    OrientI = spin_array[point]
+                    e = energy_change(lat_list[sweep], point, J)
+                    accept = (np.random.random() < np.exp(-np.divide(e, T[sweep - 1]))) or (e <= 0)
 
-                    if e <= 0:
-                        spin_array[point] *= -1
-                    elif np.exp((-1.0 * e)/temperature) > random.random():
-                        spin_array[point] *= -1
+                    if accept:
+                        acceptance += 1
+                        lat_list[sweep][point] *= -1
+                        E[sweep] += e
+                        M[sweep] += 2*lat_list[sweep][point]
+                    else:
+                        pass
 
-                    OrientF = spin_array[point]
-                    mag[sweep] = abs(np.sum(spin_array)) / len(spin_array.flatten())
-
-                    if sweep == 0:
-                        Et[int(temperature*10 - 1)][0] = E[0]
-                        E[sweep+1] = E[sweep]
-
-                    #n_step_pic(temperature,sweep,spin_array,steps)
-
-                    if OrientF == OrientI and sweep != 0:
-                        Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
-                        E[sweep+1] = E[sweep]
-                    if OrientF != OrientI and sweep != 0:
-                        Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
-                        E[sweep+1] = E[sweep] + e
-
-                    Mt[int(temperature*10 - 1),sweep] = mag[sweep]
-
-                    #updating the array-lists for the next sweep
-                    lat_list[sweep+1] = spin_array
-                    T[sweep+1] = T[sweep]
-                    M[sweep+1] = M[sweep] #FIXME not sure about this one was:
-                    #M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
+                A[sweep] = acceptance / len(lat_list[0].flatten())
             bar.update()
 
         with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
             if save_lat:
-                np.savez_compressed("save", lat=lat_list, T=T, E=E, M=M)
+                np.savez_compressed(os.path.join(parameters['dirname'], "save.npz"), lat=lat_list, T=T, E=E, M=M, A=A)
             bar.update()
 
-    if (mc_alg == 'Monte Carlo'):
+    if (parameters['mc_algorithm'] == 'Monte Carlo'):
         RS(parameters)
-    elif (mc_alg == 'Cluster'):
+    elif (parameters['mc_algorithm'] == 'Cluster'):
         #TODO finish Cluster algorithm
         pass
 
