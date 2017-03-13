@@ -7,5 +7,9 @@ from ising import *
 ###############################################################################
 
 if __name__ == "__main__":
-    load_sim()
 
+    if (len(sys.argv) == 2) and (os.path.isfile(sys.argv[1])):
+        dirname = os.path.dirname(sys.argv[1])
+        load_sim(dirname)
+    else:
+        print("Stupid you, didn't gave me a config.ini")
