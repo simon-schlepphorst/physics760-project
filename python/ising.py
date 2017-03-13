@@ -255,6 +255,61 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 #           Run simulations                                                   #
 ###############################################################################
 
+def RS(parameters):
+    ''' Random order sweeping
+    :param dict parameters: dictionary with parameters
+    '''
+
+    sweeps = parameters['mc_sweeps']
+    J = parameters['lattice_interaction']
+
+    #creaty list of lattice and initialize first one
+    lat_list = np.array([np.zeros(parameters['lattice_size'], dtype=np.int8) for _ in range(sweeps)])
+    lat_list[0] = init_spin_lattice(parameters['lattice_size'], parameters['lattice_init'])
+
+    #initialize list with easy to spot values
+    T = np.array([parameters['mc_temp']]*sweeps)
+    E = np.array([np.nan]*sweeps)
+    M = np.array([np.nan]*sweeps)
+    A = np.array([np.nan]*sweeps)
+
+    E[0] = energy_simple(lat_list[0], J)
+    M[0] = np.sum(lat_list[0])
+
+    with tqdm.tqdm(desc= 'T='+str(T[0]), total=sweeps,  dynamic_ncols=True) as bar:
+        for sweep in range(1, sweeps):
+            bar.update()
+            acceptance = 0
+            lat_list[sweep] = lat_list[sweep - 1]
+            E[sweep] = E[sweep - 1]
+            M[sweep] = M[sweep - 1]
+
+            for _ in range(len(lat_list[0].flatten())):
+                # if the lattice has a strange size point will still be inside
+                point = []
+                for i in range(len(lat_list[0].shape)):
+                    point.append(np.random.randint(0, lat_list[0].shape[i]))
+                point = tuple(point)
+
+                e = energy_change(lat_list[sweep], point, J)
+                accept = (np.random.random() < np.exp(-np.divide(e, T[sweep - 1]))) or (e <= 0)
+
+                if accept:
+                    acceptance += 1
+                    lat_list[sweep][point] *= -1
+                    E[sweep] += e
+                    M[sweep] += 2*lat_list[sweep][point]
+                else:
+                    pass
+
+            A[sweep] = acceptance / len(lat_list[0].flatten())
+        bar.update()
+
+    with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
+        if parameters['save_lat']:
+            np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A)
+        bar.update()
+
 def load_config(dirname, parameters):
     '''loads and parses a given config file
 
@@ -324,62 +379,7 @@ def run_sim(dirname):
                 mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
             print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
 
-    #Random order Sweeping:
-    #TODO this superfunction needs refactoring
-    def RS(parameters):
-        ''' Random order sweeping
-        :param dict parameters: dictionary with parameters
-        '''
 
-        sweeps = parameters['mc_sweeps']
-        J = parameters['lattice_interaction']
-
-        #creaty list of lattice and initialize first one
-        lat_list = np.array([np.zeros(parameters['lattice_size'], dtype=np.int8) for _ in range(sweeps)])
-        lat_list[0] = init_spin_lattice(parameters['lattice_size'], parameters['lattice_init'])
-
-        #initialize list with easy to spot values
-        T = np.array([parameters['mc_temp']]*sweeps)
-        E = np.array([np.nan]*sweeps)
-        M = np.array([np.nan]*sweeps)
-        A = np.array([np.nan]*sweeps)
-
-        E[0] = energy_simple(lat_list[0], J)
-        M[0] = np.sum(lat_list[0])
-
-        with tqdm.tqdm(desc= 'T='+str(T[0]), total=sweeps,  dynamic_ncols=True) as bar:
-            for sweep in range(1, sweeps):
-                bar.update()
-                acceptance = 0
-                lat_list[sweep] = lat_list[sweep - 1]
-                E[sweep] = E[sweep - 1]
-                M[sweep] = M[sweep - 1]
-
-                for _ in range(len(lat_list[0].flatten())):
-                    # if the lattice has a strange size point will still be inside
-                    point = []
-                    for i in range(len(lat_list[0].shape)):
-                        point.append(np.random.randint(0, lat_list[0].shape[i]))
-                    point = tuple(point)
-
-                    e = energy_change(lat_list[sweep], point, J)
-                    accept = (np.random.random() < np.exp(-np.divide(e, T[sweep - 1]))) or (e <= 0)
-
-                    if accept:
-                        acceptance += 1
-                        lat_list[sweep][point] *= -1
-                        E[sweep] += e
-                        M[sweep] += 2*lat_list[sweep][point]
-                    else:
-                        pass
-
-                A[sweep] = acceptance / len(lat_list[0].flatten())
-            bar.update()
-
-        with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
-            if save_lat:
-                np.savez_compressed(os.path.join(parameters['dirname'], "save.npz"), lat=lat_list, T=T, E=E, M=M, A=A)
-            bar.update()
 
     if (parameters['mc_algorithm'] == 'Monte Carlo'):
         RS(parameters)
