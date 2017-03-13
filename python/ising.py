@@ -356,44 +356,45 @@ def run_sim(dirname):
         with tqdm.tqdm(desc= 'T='+str(temperature), total=total_sweeps,  dynamic_ncols=True) as bar:
             for sweep in range(total_sweeps - 1):
                 bar.update()
-                T[sweep] = temperature
-                # if the lattice has a strange size point will still be inside
-                point = []
-                for i in range(len(lattice_N)):
-                    point.append(np.random.randint(0, lattice_N[i]))
-                point = tuple(point)
+                for _ in range(len(lat_list[0].flatten())):
+                    T[sweep] = temperature
+                    # if the lattice has a strange size point will still be inside
+                    point = []
+                    for i in range(len(lattice_N)):
+                        point.append(np.random.randint(0, lattice_N[i]))
+                    point = tuple(point)
 
-                e = energy_change(spin_array, point, j=lattice_J)
-                OrientI = spin_array[point]
+                    e = energy_change(spin_array, point, j=lattice_J)
+                    OrientI = spin_array[point]
 
-                if e <= 0:
-                    spin_array[point] *= -1
-                elif np.exp((-1.0 * e)/temperature) > random.random():
-                    spin_array[point] *= -1
+                    if e <= 0:
+                        spin_array[point] *= -1
+                    elif np.exp((-1.0 * e)/temperature) > random.random():
+                        spin_array[point] *= -1
 
-                OrientF = spin_array[point]
-                mag[sweep] = abs(np.sum(spin_array)) / len(spin_array.flatten())
+                    OrientF = spin_array[point]
+                    mag[sweep] = abs(np.sum(spin_array)) / len(spin_array.flatten())
 
-                if sweep == 0:
-                    Et[int(temperature*10 - 1)][0] = E[0]
-                    E[sweep+1] = E[sweep]
+                    if sweep == 0:
+                        Et[int(temperature*10 - 1)][0] = E[0]
+                        E[sweep+1] = E[sweep]
 
-                #n_step_pic(temperature,sweep,spin_array,steps)
+                    #n_step_pic(temperature,sweep,spin_array,steps)
 
-                if OrientF == OrientI and sweep != 0:
-                    Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
-                    E[sweep+1] = E[sweep]
-                if OrientF != OrientI and sweep != 0:
-                    Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
-                    E[sweep+1] = E[sweep] + e
+                    if OrientF == OrientI and sweep != 0:
+                        Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
+                        E[sweep+1] = E[sweep]
+                    if OrientF != OrientI and sweep != 0:
+                        Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
+                        E[sweep+1] = E[sweep] + e
 
-                Mt[int(temperature*10 - 1),sweep] = mag[sweep]
+                    Mt[int(temperature*10 - 1),sweep] = mag[sweep]
 
-                #updating the array-lists for the next sweep
-                lat_list[sweep+1] = spin_array
-                T[sweep+1] = T[sweep]
-                M[sweep+1] = M[sweep] #FIXME not sure about this one was:
-                #M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
+                    #updating the array-lists for the next sweep
+                    lat_list[sweep+1] = spin_array
+                    T[sweep+1] = T[sweep]
+                    M[sweep+1] = M[sweep] #FIXME not sure about this one was:
+                    #M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
             bar.update()
 
         with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
