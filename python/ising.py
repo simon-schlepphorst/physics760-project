@@ -92,7 +92,7 @@ def n_step_pic(T,i,Arr,n):
     else:
         return
 
-
+#FIXME --->
 def ACC(x,k):
     n = int(len(x))
     k = int(k)
@@ -107,8 +107,15 @@ def ACF(array,tstep):
     for y,x in enumerate(array):
         C[y] = [ACC(x,i) for i in range(int(tstep))]
     return C
+# <--- replace with statsmodels.tsa.stattools.acf
 
 def MeanBlock(array,xran):
+    '''
+    :param np.array array: array with magnetisations for each step
+    :param int xran: maximal blocking size
+    :returns list Sigmas: containing the calcuated deviations per blocking size
+    '''
+    #FIXME was meant for an 50xSweeps(T) array
     RowLen = len(array[0])
     ColLen = len(array)
     Sigmas = []
