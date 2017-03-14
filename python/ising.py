@@ -438,18 +438,18 @@ def load_sim(dirname):
 
     print("Finding Errors via Blocking\n")
     
-    Sigmas = [MeanBlock(E,500),MeanBlock(M,500)]
+    Sigmas = [MeanBlock(E[100:],500),MeanBlock(M[100:],500)]
     xRange = [i+1 for i in range(len(Sigmas[0]))]
 
     mask=np.isfinite(Sigmas)
     
     fig = plt.figure(4)
-    plt.plot(xRange,Sigmas[0],'b-*',label='T = 0.1')
-    plt.plot(xRange,Sigmas[0],'r-o',label='T = 1.0')
-    plt.plot(xRange,Sigmas[0],'k-^',label='T = 2.0')
-    plt.plot(xRange,Sigmas[0],'c-s',label='T = 3.0')
-    plt.plot(xRange,Sigmas[0],'m-p',label='T = 4.0')
-    plt.plot(xRange,Sigmas[0],'g-h',label='T = 5.0')
+    plt.plot(xRange,Sigmas[0],'b-*',label='T = {:1f}'.format(parameters['mc_temp']))
+    #plt.plot(xRange,Sigmas[0],'r-o',label='T = 1.0')
+    #plt.plot(xRange,Sigmas[0],'k-^',label='T = 2.0')
+    #plt.plot(xRange,Sigmas[0],'c-s',label='T = 3.0')
+    #plt.plot(xRange,Sigmas[0],'m-p',label='T = 4.0')
+    #plt.plot(xRange,Sigmas[0],'g-h',label='T = 5.0')
     plt.title('Error of the Energy vs Block Size')
     plt.xlabel('Block Size')
     plt.ylabel('$\sigma$')
@@ -460,12 +460,12 @@ def load_sim(dirname):
     
     fig = plt.figure(5)
     #plt.plot(xRange[mask[1]],Sigmas[1][mask[1]],'b-*',label='T = 0.1')
-    plt.plot(xRange,Sigmas[1],'b-*',label='T = 0.1')
-    plt.plot(xRange,Sigmas[1],'r-o',label='T = 1.0')
-    plt.plot(xRange,Sigmas[1],'k-^',label='T = 2.0')
-    plt.plot(xRange,Sigmas[1],'c-s',label='T = 3.0')
-    plt.plot(xRange,Sigmas[1],'m-p',label='T = 4.0')
-    plt.plot(xRange,Sigmas[1],'g-h',label='T = 5.0')
+    plt.plot(xRange,Sigmas[1],'b-*',label='T = {:1f}'.format(parameters['mc_temp']))
+    #plt.plot(xRange,Sigmas[1],'r-o',label='T = 1.0')
+    #plt.plot(xRange,Sigmas[1],'k-^',label='T = 2.0')
+    #plt.plot(xRange,Sigmas[1],'c-s',label='T = 3.0')
+    #plt.plot(xRange,Sigmas[1],'m-p',label='T = 4.0')
+    #plt.plot(xRange,Sigmas[1],'g-h',label='T = 5.0')
     plt.title('Error of the Magnetization vs Block Size')
     plt.xlabel('Block Size')
     plt.ylabel('$\sigma$')
