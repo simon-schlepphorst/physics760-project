@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.3.13)  14 MAR 2017 20:00
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.3.13)  14 MAR 2017 20:33
 entering extended mode
 **./PHY760.tex
 (PHY760.tex
@@ -1588,35 +1588,35 @@ Overfull \hbox (42.82195pt too wide) has occurred while \output is active
 
 ]
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
+LaTeX Warning: Command \textbar invalid in math mode on input line 148.
 
 File: Images/logo.png Graphic file (type png)
 <use Images/logo.png>
-Package pdftex.def Info: Images/logo.png used on input line 149.
+Package pdftex.def Info: Images/logo.png used on input line 148.
 (pdftex.def)             Requested size: 57.77187pt x 42.67912pt.
 
 Overfull \vbox (7.20453pt too high) has occurred while \output is active []
@@ -1628,16 +1628,18 @@ Overfull \hbox (42.82195pt too wide) has occurred while \output is active
 
 [7
 
-]
-
-LaTeX Warning: Command \textbar invalid in math mode on input line 149.
-
-[8
+] [8
 
 ]
+
+LaTeX Warning: Command \textbar invalid in math mode on input line 164.
+
+
+LaTeX Warning: Command \textbar invalid in math mode on input line 164.
+
 File: Images/logo.png Graphic file (type png)
- <use Images/logo.png>
-Package pdftex.def Info: Images/logo.png used on input line 152.
+<use Images/logo.png>
+Package pdftex.def Info: Images/logo.png used on input line 164.
 (pdftex.def)             Requested size: 57.77187pt x 42.67912pt.
 
 Overfull \vbox (7.20453pt too high) has occurred while \output is active []
@@ -1649,10 +1651,12 @@ Overfull \hbox (42.82195pt too wide) has occurred while \output is active
 
 [9
 
+] [10
+
 ]
 File: Images/logo.png Graphic file (type png)
  <use Images/logo.png>
-Package pdftex.def Info: Images/logo.png used on input line 165.
+Package pdftex.def Info: Images/logo.png used on input line 177.
 (pdftex.def)             Requested size: 57.77187pt x 42.67912pt.
 
 Overfull \vbox (7.20453pt too high) has occurred while \output is active []
@@ -1662,9 +1666,9 @@ Overfull \hbox (42.82195pt too wide) has occurred while \output is active
  [][]  \T1/cmss/m/n/6 ([])  
  []
 
-[10
+[11
 
-] [11
+] [12
 
 ]
 \tf@nav=\write6
@@ -1676,13 +1680,13 @@ Overfull \hbox (42.82195pt too wide) has occurred while \output is active
 \tf@snm=\write8
 \openout8 = `PHY760.snm'.
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 172.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 172.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 184.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 184.
  (PHY760.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 172.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 172.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 184.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 184.
 Package rerunfilecheck Info: File `PHY760.out' has not changed.
-(rerunfilecheck)             Checksum: 2C7A95B0F80B25C69EF6330D32677980;310.
+(rerunfilecheck)             Checksum: 96C398E68C5B67EE3D47FDA1C3FD7448;310.
 
 
 LaTeX Font Warning: Size substitutions with differences
@@ -1690,9 +1694,9 @@ LaTeX Font Warning: Size substitutions with differences
 
  ) 
 Here is how much of TeX's memory you used:
- 22426 strings out of 493333
- 451141 string characters out of 3139197
- 509950 words of memory out of 3000000
+ 22428 strings out of 493333
+ 451160 string characters out of 3139197
+ 509195 words of memory out of 3000000
  25408 multiletter control sequences out of 15000+200000
  22053 words of font info for 61 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -1713,13 +1717,12 @@ onts/type1/public/amsfonts/cm/cmss10.pfb><C:/Program Files/MiKTeX 2.9/fonts/typ
 e1/public/amsfonts/cm/cmss8.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public
 /amsfonts/cm/cmssi10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfon
 ts/cm/cmssi8.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cm
-sy10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy5.pfb>
-<C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Progr
-am Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C:/Program Files/
-MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on PHY760.pdf (11 pages, 192328 bytes).
+sy10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy6.pfb>
+<C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C:/Progr
+am Files/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/msam10.pfb>
+Output written on PHY760.pdf (12 pages, 191870 bytes).
 PDF statistics:
- 409 PDF objects out of 1000 (max. 8388607)
- 28 named destinations out of 1000 (max. 500000)
+ 418 PDF objects out of 1000 (max. 8388607)
+ 30 named destinations out of 1000 (max. 500000)
  100 words of extra memory for PDF output out of 10000 (max. 10000000)
 

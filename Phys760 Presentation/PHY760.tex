@@ -143,12 +143,24 @@ semithick]
 \end{tikzpicture}
 \note{
 Markov Chains are mathematical systems that hop from one "state" (a situation or set of values) to another. That is to say, Markov chains tell you the probability to transition between states in a system. \\
-So what takes us from state A to (lets say) state C is a series of jumps relying on probability. 
-In the figure you can see a simple Markov Chain of 3 states. Furthermore, it is worth noting that $\sum_{s'} P(s'\textbar s) = 1$\\
+So what takes us from state A to (lets say) state C is a series of jumps relying on probability. \\
 }
 \end{frame}
 \begin{frame}
+We can build a matrix P which will be a stochastic matrix which will then be used to describe the probability for any initial state, $\mu$, to go to a final state, $\nu$. 
 
+\[\begin{bmatrix}
+	P_{11} & P_{12} & P_{13} &    \dots    & P_{1m} \\
+	P_{21} & P_{22} & P_{23} &    \dots    & P_{2m} \\
+	\vdots & \vdots & \vdots & P_{\mu \nu} & \vdots \\
+	P_{n1} & P_{n2} & P_{n3} &    \dots    & P_{nm}
+\end{bmatrix}\vspace{.5cm}\]
+In the figure you can see a simple Markov Chain of 3 states. Furthermore, it is worth noting that $\sum_{s'} P(s'\textbar s) = 1$\\ 
+We have a probability $ P(y\textbar x) \equiv P(x\rightarrow y) $
+
+\note{
+We have prob for state x to go to y 
+}
 \end{frame}
 \subsection{Metropolis Algorithm}
 \begin{frame}
