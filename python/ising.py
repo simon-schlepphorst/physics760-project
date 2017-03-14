@@ -133,12 +133,12 @@ def MeanBlock(array, limit):
 
     for blocksize in range(1, limit):
 
-        last_index = len(array) - len(array) % blocksize - 1
+        last_index = len(array) - len(array) % blocksize
         if last_index < 0:
             Sigmas.append(np.nan)
             continue
-        Array = [array[i:i+blocksize] for i in range(0,last_index, blocksize)]
-        Sigmas.append( np.std( np.mean(Array, axis=1) ) )
+        Array = np.array([array[i:i+blocksize] for i in range(0,last_index, blocksize)])
+        Sigmas.append(np.mean( np.var(Array, axis=1)))
 
     return np.array(Sigmas)
 
