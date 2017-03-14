@@ -123,29 +123,24 @@ def ACF(array,tstep):
     return C
 # <--- replace with statsmodels.tsa.stattools.acf
 
-def MeanBlock(array,xran):
+def MeanBlock(array, limit):
     '''
     :param np.array array: array with magnetisations for each step
-    :param int xran: maximal blocking size
-    :returns list Sigmas: containing the calcuated deviations per blocking size
+    :param int limit: maximal blocking size
+    :returns np.array Sigmas: containing the calcuated deviations per blocking size
     '''
-    #FIXME was meant for an 50xSweeps(T) array
-    RowLen = len(array[0])
-    ColLen = len(array)
     Sigmas = []
-    while RowLen%xran != 0:
-        RowLen += -1
-    for y in range(ColLen):
-        SigList = []
-        for B in range(1,xran):
-            Array = [array[y][i:i+B] for i in range(0,RowLen,B)]
-            if len(Array[0]) != len(Array[len(Array)-1]):
-                Array = Array[0:len(Array)-2]
-            Means = np.mean(Array,axis=1)
-            SigmaMeans = np.std(Means)
-            SigList.append(SigmaMeans)
-        Sigmas.append(SigList)
-    return Sigmas
+
+    for blocksize in range(1, limit):
+
+        last_index = len(array) - len(array) % blocksize - 1
+        if last_index < 0:
+            Sigmas.append(np.nan)
+            continue
+        Array = [array[i:i+blocksize] for i in range(0,last_index, blocksize)]
+        Sigmas.append( np.std( np.mean(Array, axis=1) ) )
+
+    return np.array(Sigmas)
 
 #FIXME marked for deletion, need to resolve dependencies
 def init_energy(spin_array, lattice):
