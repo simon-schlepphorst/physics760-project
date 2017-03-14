@@ -98,11 +98,11 @@
 3. Canonical Partition function. It would take a lot of time to go into detail on the Partition function (PF); but in a nutshell, it describes the statistical properties of the system and it represents a particular statistical ensemble. \\
 }
 \end{frame}
-
-\subsection{Monte Carlo Motivation}
+\section{Monte Carlo}
+\subsection{Motivation}
 \begin{frame}
-\frametitle{Introduction}
-\framesubtitle{Monte Carlo Motivation}
+\frametitle{Monte Carlo}
+\framesubtitle{Motivation}
 Ising model can be difficult to evaluate numerically if there are many states for the system. For example, let:\\
 \begin{description}
 	\item[L:] Total number of sites in the lattice (length $\times$ width)
@@ -120,7 +120,7 @@ Some properties that can be estimated are: Specific heat or magnetization (at a 
 \end{frame}
 \subsection{Markov Chains}
 \begin{frame}
-\frametitle{Introduction}
+\frametitle{Monte Carlo}
 \framesubtitle{Markov Chains}\vspace{-.5cm}
 \begin{tikzpicture}[->,>=stealth,shorten >=2pt,auto,node distance=5cm,
 semithick]
@@ -147,36 +147,93 @@ So what takes us from state A to (lets say) state C is a series of jumps relying
 }
 \end{frame}
 \begin{frame}
-We can build a matrix P which will be a stochastic matrix which will then be used to describe the probability for any initial state, $\mu$, to go to a final state, $\nu$. 
+We can build a transition matrix, $P$, which will then be used to describe the probability for any initial state, $\mu$, to go to a final state, $\nu$. 
 
-\[\begin{bmatrix}
+\[
+P = 
+\begin{bmatrix}
 	P_{11} & P_{12} & P_{13} &    \dots    & P_{1m} \\
 	P_{21} & P_{22} & P_{23} &    \dots    & P_{2m} \\
 	\vdots & \vdots & \vdots & P_{\mu \nu} & \vdots \\
 	P_{n1} & P_{n2} & P_{n3} &    \dots    & P_{nm}
-\end{bmatrix}\vspace{.5cm}\]
-In the figure you can see a simple Markov Chain of 3 states. Furthermore, it is worth noting that $\sum_{s'} P(s'\textbar s) = 1$\\ 
-We have a probability $ P(y\textbar x) \equiv P(x\rightarrow y) $
+\end{bmatrix}\vspace{.25cm}\]
+For physical systems, we require P to be irreducible and positive recurrent to ensure we "produce" the desired invariant distribution $\pi_\mu$. This stationary distribution has the following properties:
+\begin{equation}
+\pi = \pi P
+\end{equation}
+\begin{equation}
+\pi_\mu P_{\mu\nu}= \pi_\nu P_{\nu\mu}
+\end{equation}
+\begin{center}
+	Where are our distributions?\\
+	Thermodynamical system $ \rightarrow $ Boltzmann Statistics
+\end{center}
+
 
 \note{
-We have prob for state x to go to y 
+As we can see, we only have $\mu \rightarrow \nu$ transitions. That means that Markov chains are "memoryless" or that going to a state only relies on the state you are currently on and not any other step before that. 
+
+4. pi is a row vector in this notation. 
+
+5. definition of detailed balance
+
+\begin{description}
+	\item[Irreducibility:] Every state can be reached from any other state in a final number of steps.
+	\item[Positive Recurrent:] The chain returns to $\mu$ from $\mu$ in a finite time
+\end{description}
 }
 \end{frame}
 \subsection{Metropolis Algorithm}
 \begin{frame}
-\frametitle{Introduction}
+\frametitle{Monte Carlo}
 \framesubtitle{Metropolis Algorithm}
-\begin{itemize}
-	\item 
-\end{itemize}
+Since we know our selection probabilities, $P_{\mu\nu}$ and $ \pi $, we can now move on to making an accept-reject algorithm.\\
+If we are on state $ X_n $ and want to test if we will transition to $ Y $, we will do so with the following accept probability
 
+\begin{equation}
+X_{n+1} = 
+	\begin{cases}
+		Y & \rho(X_n,Y_n) \\
+		X_n & 1-\rho(X_n,Y_n)
+	\end{cases}
+\end{equation}
+
+\begin{multline}
+	\rho(X_n,Y_n) = 
+	min\bigg\{\frac{\pi_Y}{\pi_X}\frac{P_Y}{P_X},1\bigg\} =
+	\frac{\pi_Y}{\pi_X}\frac{P_Y}{P_X} = 
+	\frac{\frac{1}{Z}e^{-\frac{\mathcal{H}_Y}{k_B T}}}{\frac{1}{Z}e^{-\frac{\mathcal{H}_X}{k_B T}}} =
+	e^{-\frac{\mathcal{H}_Y - \mathcal{H}_X}{k_B T}}
+\end{multline}
 
 \note{
+7. shows our acceptance/flip probability. 
 
+all thats left is just to apply all this in an algorithm. 
 }
 \end{frame}
+\begin{frame}
+\begin{enumerate}
+	\item Generate a lattice (hot, cold or random)
+	\item Pick a point
+	\item Test energy
+	\item If flipping benefits the lattice, then flip
+	\item Otherwise test against $\rho$ with RGN
+	\item Repeat
+\end{enumerate}
+\end{frame}
+\section{Results}
+\subsection{Metropolis}
+\begin{frame}
+\frametitle{Results}
+\framesubtitle{Metropolis}
+Get
+\end{frame}
 
-
+\subsection{Clustering}
+\begin{frame}
+	content...
+\end{frame}
 
 
 
