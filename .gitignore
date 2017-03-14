@@ -4,3 +4,4 @@ python/Images
 python/Videos
 python/Saves
 python/save.npz
+*__pycache__

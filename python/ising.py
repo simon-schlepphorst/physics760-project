@@ -1,10 +1,11 @@
-#!/usr/bin/pyhton3
+#!/usr/bin/python3
 import itertools
 import numpy as np
 import random
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 import os
+import sys
 import tqdm
 
 import configparser
@@ -13,7 +14,21 @@ import configparser
 #           Lattice generation and simple functions                           #
 ###############################################################################
 
+def init_spin_lattice(N, start='random'):
+    '''
+    Fills a array of shape N with random choice of 1 and -1
 
+    :praram tuple N: shape of desired lattice
+    :returns np.array: ising lattice
+    '''
+    if start == 'random':
+        return np.random.choice([-1,1], N).astype(np.int8)
+    elif start == 'hot':
+        return np.resize([1,-1], N).astype(np.int8)
+    elif start == 'cold':
+        return np.ones(N).astype(np.int8)
+
+#FIXME delete if not needed anymore
 def init_spin_array(N,choice):
     if choice == 'random':
         return np.random.choice((-1, 1), size=(N, N)).astype('int8')
@@ -91,7 +106,7 @@ def n_step_pic(T,i,Arr,n):
     else:
         return
 
-
+#FIXME --->
 def ACC(x,k):
     n = int(len(x))
     k = int(k)
@@ -106,25 +121,28 @@ def ACF(array,tstep):
     for y,x in enumerate(array):
         C[y] = [ACC(x,i) for i in range(int(tstep))]
     return C
+# <--- replace with statsmodels.tsa.stattools.acf
 
-def MeanBlock(array,xran):
-    RowLen = len(array[0])
-    ColLen = len(array)
+def MeanBlock(array, limit):
+    '''
+    :param np.array array: array with magnetisations for each step
+    :param int limit: maximal blocking size
+    :returns np.array Sigmas: containing the calcuated deviations per blocking size
+    '''
     Sigmas = []
-    while RowLen%xran != 0:
-        RowLen += -1
-    for y in range(ColLen):
-        SigList = []
-        for B in range(1,xran):
-            Array = [array[y][i:i+B] for i in range(0,RowLen,B)]
-            if len(Array[0]) != len(Array[len(Array)-1]):
-                Array = Array[0:len(Array)-2]
-            Means = np.mean(Array,axis=1)
-            SigmaMeans = np.std(Means)
-            SigList.append(SigmaMeans)
-        Sigmas.append(SigList)
-    return Sigmas
 
+    for blocksize in range(1, limit):
+
+        last_index = len(array) - len(array) % blocksize - 1
+        if last_index < 0:
+            Sigmas.append(np.nan)
+            continue
+        Array = [array[i:i+blocksize] for i in range(0,last_index, blocksize)]
+        Sigmas.append( np.std( np.mean(Array, axis=1) ) )
+
+    return np.array(Sigmas)
+
+#FIXME marked for deletion, need to resolve dependencies
 def init_energy(spin_array, lattice):
     E = np.zeros_like(spin_array)
     for x in range(lattice):
@@ -135,11 +153,14 @@ def init_energy(spin_array, lattice):
 def init_mag(spin_array, lattice):
     return abs(sum(sum(spin_array))) / (lattice ** 2)
 
-def make_cluster(spin_array, lattice, x, y, temperature):
+def make_cluster(spin_array, lattice, N, temperature):
     '''
     This function makes one cluster out of a starting point. 
     That is to say it outputs a [list] with all the points in the cluster    
     '''
+    assert len(N) == 2
+    x, y = N
+
     Origin = [x,y]
     Cluster = [(x,y)]
     i = 1
@@ -229,76 +250,122 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 #           Run simulations                                                   #
 ###############################################################################
 
-def run_sim():
-    '''run simulation from config
+def RS(parameters):
+    ''' Random order sweeping
+    :param dict parameters: dictionary with parameters
     '''
-    def load_config(filename):
-        config = configparser.ConfigParser()
-        config.read(filename)
+
+    sweeps = parameters['mc_sweeps']
+    J = parameters['lattice_interaction']
+
+    #creaty list of lattice and initialize first one
+    lat_list = np.array([np.zeros(parameters['lattice_size'], dtype=np.int8) for _ in range(sweeps)])
+    lat_list[0] = init_spin_lattice(parameters['lattice_size'], parameters['lattice_init'])
+
+    #initialize list with easy to spot values
+    T = np.array([parameters['mc_temp']]*sweeps)
+    E = np.array([np.nan]*sweeps)
+    M = np.array([np.nan]*sweeps)
+    A = np.array([np.nan]*sweeps)
+
+    E[0] = energy_simple(lat_list[0], J)
+    M[0] = np.sum(lat_list[0])
+
+    with tqdm.tqdm(desc= 'T='+str(T[0]), total=sweeps,  dynamic_ncols=True) as bar:
+        for sweep in range(1, sweeps):
+            bar.update()
+            acceptance = 0
+            lat_list[sweep] = lat_list[sweep - 1]
+            E[sweep] = E[sweep - 1]
+            M[sweep] = M[sweep - 1]
+
+            for _ in range(len(lat_list[0].flatten())):
+                # if the lattice has a strange size point will still be inside
+                point = []
+                for i in range(len(lat_list[0].shape)):
+                    point.append(np.random.randint(0, lat_list[0].shape[i]))
+                point = tuple(point)
+
+                e = energy_change(lat_list[sweep], point, J)
+                accept = (np.random.random() < np.exp(-np.divide(e, T[sweep - 1]))) or (e <= 0)
+
+                if accept:
+                    acceptance += 1
+                    lat_list[sweep][point] *= -1
+                    E[sweep] += e
+                    M[sweep] += 2*lat_list[sweep][point]
+                else:
+                    pass
+
+            A[sweep] = acceptance / len(lat_list[0].flatten())
+        bar.update()
+
+    with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
+        if parameters['save_lat']:
+            np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A)
+        bar.update()
+
+def CS(parameters):
+    ''' Swendsen-Wang Cluster algorithm
+
+    :saves lattice, ..., cluster list:
+    '''
+    raise NotImplementedError
+
+    with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
+        if parameters['save_lat']:
+            np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A)
+        bar.update()
+
+
+def load_config(dirname, parameters):
+    '''loads and parses a given config file
+
+    :param filename: filename
+    :param dict parameters: dictionary to fill values in
+    '''
+    config = configparser.ConfigParser()
+    with open(os.path.join(dirname, "config.ini")) as f:
+        config.read_file(f)
 
         #read options
         try:
-            nonlocal lattice_N
-            nonlocal lattice_state
-            nonlocal lattice_J
-            lattice_N = eval(config['lattice']['size'])
-            lattice_state = config['lattice'].get('state')
-            if not lattice_state in ('hot', 'cold', 'random'):
-                raise ValueError(lattice_state)
+            parameters['dirname'] = dirname
+            parameters['lattice_size'] = eval(config['lattice']['size'])
+            parameters['lattice_init'] = config['lattice'].get('init')
+            if not parameters['lattice_init'] in ('hot', 'cold', 'random'):
+                raise ValueError(parameters['lattice_init'])
             #currently not in use
-            lattice_J = config['lattice'].getint('interaction strength')
+            parameters['lattice_interaction'] = config['lattice'].getint('interaction')
 
-            nonlocal mc_temp
-            nonlocal mc_sweeps
-            nonlocal mc_alg
-            mc_sweeps = config['markov chain'].getint('sweeps')
-            mc_start = config['markov chain'].getint('start')
-            mc_temp = config.getfloat('markov chain', 'temperature')
-            mc_alg = config.get('markov chain', 'algorithm')
-            if not mc_alg in ('Monte Carlo', 'Cluster'):
-                raise ValueError(mc_alg)
+            parameters['mc_sweeps'] = config['markov chain'].getint('sweeps')
+            parameters['mc_start'] = config['markov chain'].getint('start')
+            parameters['mc_temp'] = config.getfloat('markov chain', 'temperature')
+            parameters['mc_algorithm'] = config.get('markov chain', 'algorithm')
+            if not parameters['mc_algorithm'] in ('Monte Carlo', 'Cluster'):
+                raise ValueError(parameters['mc_algorithm'])
 
-            nonlocal save_vol
-            nonlocal save_pic
-            nonlocal save_lat
-            save_vol = config.getint('save', 'volume')
-            save_pic = config.getboolean('save', 'pictures')
-            save_lat = config.getboolean('save', 'lattice')
+            parameters['save_vol'] = config.getint('save', 'volume')
+            parameters['save_pic'] = config.getboolean('save', 'pictures')
+            parameters['save_lat'] = config.getboolean('save', 'lattice')
         except:
             print("Ooops. Some config is rotten in the state of Denmark.")
             raise
 
-    # Create names to load variables in
-    lattice_N = np.nan
-    lattice_state = np.nan
-    lattice_J = np.nan
-    mc_temp = np.nan
-    mc_sweeps = np.nan
-    mc_alg = np.nan
-    save_vol = np.nan
-    save_pic = np.nan
-    save_lat = np.nan
+def run_sim(dirname):
+    '''run simulation from config
+    :param str dirname: directory to load the config from
+    :output file: saves numpy arrays in given directory
+    '''
 
-    # Read values from config if exist
-    if os.path.isfile("config.ini"):
-        load_config("config.ini")
-    else:
-        raise FileNotFoundError
-
-    #translate options for legacy reasons
-    lattice = lattice_N[0] #TODO prepare rest of code for tuples
-    sweeps = mc_sweeps
-    ACFTime = 500
-    choice = lattice_state
+    parameters = {} #dictionary to store the values of the config file
+    load_config(dirname, parameters)
 
 
-    RELAX_SWEEPS = int(sweeps/100)
-    Et = np.zeros((50,sweeps + RELAX_SWEEPS))
-    Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
-
-
-    #Systematic Sweeping (going pooint by point in order) 
-    def SS():
+    def SS(parameters):
+        ''' Systematic Sweeping (going pooint by point in order)
+        :param dict parameters: dictionary with paramters
+        '''
         for temperature in np.arange(0.1, 5.0, 0.1):
             if os.path.isdir('Images/T-'+str(temperature)) is True:
                 pass
@@ -320,195 +387,69 @@ def run_sim():
                 mag[sweep] = abs(sum(sum(spin_array))) / (lattice ** 2)
             print(temperature, sum(mag[RELAX_SWEEPS:]) / sweeps)
 
-    #Random order Sweeping:
-    #TODO this superfunction needs refactoring
-    def RS():
-        total_sweeps = sweeps + RELAX_SWEEPS
 
-        #initialize list with easy to spot values
-        T = np.array([np.nan]*total_sweeps)
-        M = np.array([np.nan]*total_sweeps)
 
-        #creaty list of lattice and initialize first one
-        lat_list = np.array([np.zeros(lattice_N, dtype=np.int8) for _ in range(total_sweeps)])
-        lat_list[0] = init_spin_array(lattice, choice)
-
-        E = np.array([np.nan]*total_sweeps)
-        E[0] = init_energy(lat_list[0], lattice)
-        spin_array = lat_list[0]
-
-        mag = np.zeros(total_sweeps)
-        temperature = mc_temp #use temperature from config file
-        T[0] = temperature
-        with tqdm.tqdm(desc= 'T='+str(temperature), total=total_sweeps,  dynamic_ncols=True) as bar:
-            for sweep in range(total_sweeps - 1):
-                bar.update()
-                T[sweep] = temperature
-                # if the lattice has a strange size point will still be inside
-                point = []
-                for i in range(len(lattice_N)):
-                    point.append(np.random.randint(0, lattice_N[i]))
-                point = tuple(point)
-
-                e = energy_change(spin_array, point, j=lattice_J)
-                OrientI = spin_array[point]
-
-                if e <= 0:
-                    spin_array[point] *= -1
-                elif np.exp((-1.0 * e)/temperature) > random.random():
-                    spin_array[point] *= -1
-
-                OrientF = spin_array[point]
-                mag[sweep] = abs(np.sum(spin_array)) / len(spin_array.flatten())
-
-                if sweep == 0:
-                    Et[int(temperature*10 - 1)][0] = E[0]
-                    E[sweep+1] = E[sweep]
-
-                #n_step_pic(temperature,sweep,spin_array,steps)
-
-                if OrientF == OrientI and sweep != 0:
-                    Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]
-                    E[sweep+1] = E[sweep]
-                if OrientF != OrientI and sweep != 0:
-                    Et[int(temperature*10 - 1)][sweep] = Et[int(temperature*10 - 1)][sweep-1]+e
-                    E[sweep+1] = E[sweep] + e
-
-                Mt[int(temperature*10 - 1),sweep] = mag[sweep]
-
-                #updating the array-lists for the next sweep
-                lat_list[sweep+1] = spin_array
-                T[sweep+1] = T[sweep]
-                M[sweep+1] = M[sweep] #FIXME not sure about this one was:
-                #M.append(sum(mag[RELAX_SWEEPS:]) / sweeps)
-            bar.update()
-
-        with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
-            if save_lat:
-                np.savez_compressed("save", lat=lat_list, T=T, E=E, M=M)
-            bar.update()
-
-            '''to reload the save
-            with open('save.npz') as f:
-                f_npz = np.load(f)
-                lat_list = f_npz['lat']
-                T=f_npz['T']
-                E=f_npz['E']
-                M=f_npz['M']
-            '''
-
-    if (mc_alg == 'Monte Carlo'):
-        RS()
-    elif (mc_alg == 'Cluster'):
-        #TODO finish Cluster algorithm
-        pass
+    if (parameters['mc_algorithm'] == 'Monte Carlo'):
+        RS(parameters)
+    elif (parameters['mc_algorithm'] == 'Cluster'):
+        CS(parameters)
 
 ###############################################################################
 #           Crunch the numbers                                                #
 ###############################################################################
     #TODO Calculation of the results should happen in extra function
     #     so reading runs from file is supported
-def load_sim():
+def load_sim(dirname):
     '''load simulation
+    :param str dirname: directory to load the simulation from
+    :return dict dictionary: dictionary containing the results for given simualtion
     '''
-    def load_config(filename):
-        config = configparser.ConfigParser()
-        config.read(filename)
+    parameters = {} #dictionary to store the values of the config file
+    load_config(dirname, parameters)
 
-        #read options
-        try:
-            nonlocal lattice_N
-            nonlocal lattice_state
-            nonlocal lattice_J
-            lattice_N = eval(config['lattice']['size'])
-            lattice_state = config['lattice'].get('state')
-            if not lattice_state in ('hot', 'cold', 'random'):
-                raise ValueError(lattice_state)
-            #currently not in use
-            lattice_J = config['lattice'].getint('interaction strength')
+    #translate options for legacy reasons --->
+    lattice_N = parameters['lattice_size']
+    lattice_state = parameters['lattice_init']
+    lattice_J = parameters['lattice_interaction']
+    mc_temp = parameters['mc_temp']
+    mc_sweeps = parameters['mc_sweeps']
+    mc_alg = parameters['mc_algorithm']
+    save_vol = parameters['save_vol']
+    save_pic = parameters['save_pic']
+    save_lat = parameters['save_lat']
 
-            nonlocal mc_temp
-            nonlocal mc_sweeps
-            nonlocal mc_alg
-            mc_sweeps = config['markov chain'].getint('sweeps')
-            mc_start = config['markov chain'].getint('start')
-            mc_temp = config.getfloat('markov chain', 'temperature')
-            mc_alg = config.get('markov chain', 'algorithm')
-            if not mc_alg in ('Monte Carlo'):
-                raise ValueError(mc_alg)
-
-            nonlocal save_vol
-            nonlocal save_pic
-            nonlocal save_lat
-            save_vol = config.getint('save', 'volume')
-            save_pic = config.getboolean('save', 'pictures')
-            save_lat = config.getboolean('save', 'lattice')
-        except:
-            print("Ooops. Some config is rotten in the state of Denmark.")
-            raise
-
-    # Create names to load variables in
-    lattice_N = np.nan
-    lattice_state = np.nan
-    lattice_J = np.nan
-    mc_temp = np.nan
-    mc_sweeps = np.nan
-    mc_alg = np.nan
-    save_vol = np.nan
-    save_pic = np.nan
-    save_lat = np.nan
-
-    # Read values from config if exist
-    if os.path.isfile("config.ini"):
-        load_config("config.ini")
-    else:
-        raise FileNotFoundError
-
-    #translate options for legacy reasons
-    lattice = lattice_N[0] #TODO prepare rest of code for tuples
-    sweeps = mc_sweeps
+    lattice = parameters['lattice_size'][0] #TODO prepare rest of code for tuples
+    sweeps = parameters['mc_sweeps']
     ACFTime = 500
-    choice = lattice_state
+    choice = parameters['lattice_init']
 
     RELAX_SWEEPS = int(sweeps/100)
     Et = np.zeros((50,sweeps + RELAX_SWEEPS))
     Mt = np.zeros((50,sweeps + RELAX_SWEEPS))
+    #<--- FIXME
 
-    # Read values from save if exist
-    if os.path.isfile("save.npz"):
-        load_config("save.npz")
-    else:
-        raise FileNotFoundError
-
-    with open('save.npz') as f:
-        f_npz = np.load(f)
-        lat_list = f_npz['lat']
-        T=f_npz['T']
-        E=f_npz['E']
-        M=f_npz['M']
-
-    #FIXME Glue Code to get the names right
-    raise NotImplementedError
-
-
-    #    print("Getting ACF Function...\n")
-    #    c_e = ACF(Et,ACFTime)
-    #    c_m = ACF(Mt,ACFTime)
-    #
-    #    print("ACF Function Complete\n")
+    # Read values from save
+    with np.load(os.path.join(parameters['dirname'], 'simulation.npz')) as data:
+        lat_list = data['lat']
+        T = data['T']
+        E = data['E']
+        M = data['M']
+        A = data['A']
 
     print("Finding Errors via Blocking\n")
     
-    xRange = [i for i in range(1,500)]
-    Sigmas = [MeanBlock(Et,500),MeanBlock(Mt,500)]
+    Sigmas = [MeanBlock(E,500),MeanBlock(M,500)]
+    xRange = [i+1 for i in range(len(Sigmas[0]))]
+
+    mask=np.isfinite(Sigmas)
     
     fig = plt.figure(4)
-    plt.plot(xRange,Sigmas[0][0],'b-*',label='T = 0.1')
-    plt.plot(xRange,Sigmas[0][9],'r-o',label='T = 1.0')
-    plt.plot(xRange,Sigmas[0][19],'k-^',label='T = 2.0')
-    plt.plot(xRange,Sigmas[0][29],'c-s',label='T = 3.0')
-    plt.plot(xRange,Sigmas[0][39],'m-p',label='T = 4.0')
-    plt.plot(xRange,Sigmas[0][49],'g-h',label='T = 5.0')
+    plt.plot(xRange,Sigmas[0],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[0],'r-o',label='T = 1.0')
+    plt.plot(xRange,Sigmas[0],'k-^',label='T = 2.0')
+    plt.plot(xRange,Sigmas[0],'c-s',label='T = 3.0')
+    plt.plot(xRange,Sigmas[0],'m-p',label='T = 4.0')
+    plt.plot(xRange,Sigmas[0],'g-h',label='T = 5.0')
     plt.title('Error of the Energy vs Block Size')
     plt.xlabel('Block Size')
     plt.ylabel('$\sigma$')
@@ -518,12 +459,13 @@ def load_sim():
     plt.show()
     
     fig = plt.figure(5)
-    plt.plot(xRange,Sigmas[1][0],'b-*',label='T = 0.1')
-    plt.plot(xRange,Sigmas[1][9],'r-o',label='T = 1.0')
-    plt.plot(xRange,Sigmas[1][19],'k-^',label='T = 2.0')
-    plt.plot(xRange,Sigmas[1][29],'c-s',label='T = 3.0')
-    plt.plot(xRange,Sigmas[1][39],'m-p',label='T = 4.0')
-    plt.plot(xRange,Sigmas[1][49],'g-h',label='T = 5.0')
+    #plt.plot(xRange[mask[1]],Sigmas[1][mask[1]],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[1],'b-*',label='T = 0.1')
+    plt.plot(xRange,Sigmas[1],'r-o',label='T = 1.0')
+    plt.plot(xRange,Sigmas[1],'k-^',label='T = 2.0')
+    plt.plot(xRange,Sigmas[1],'c-s',label='T = 3.0')
+    plt.plot(xRange,Sigmas[1],'m-p',label='T = 4.0')
+    plt.plot(xRange,Sigmas[1],'g-h',label='T = 5.0')
     plt.title('Error of the Magnetization vs Block Size')
     plt.xlabel('Block Size')
     plt.ylabel('$\sigma$')
@@ -536,14 +478,15 @@ def load_sim():
 #        plt.plot(xRange,Sigmas[1][i],label='T = ' + str((1+i)/10))
 #    plt.legend(loc='best',prop={'size':8})
     
-    fig = plt.figure(1)
-    plt.errorbar(T,M,yerr=np.sqrt(np.var(M)/sweeps),fmt='b-*',label='Data')
-    plt.title('Magnetization vs Temperature')
-    plt.xlabel('Temperature')
-    plt.ylabel('Magnetization')
-    fig.tight_layout()
-    plt.show()
+#    fig = plt.figure(1)
+#    plt.errorbar(T,M,yerr=np.sqrt(np.var(M)/sweeps),fmt='b-*',label='Data')
+#    plt.title('Magnetization vs Temperature')
+#    plt.xlabel('Temperature')
+#    plt.ylabel('Magnetization')
+#    fig.tight_layout()
+#    plt.show()
     
+    raise NotImplementedError
     '''
     Since we now have the blocking, it would be useful to recall the array arrangements here
     As you can see, we now need to apply the blocking to the M matrix so we can apply the coorect
@@ -612,5 +555,10 @@ def load_sim():
 ###############################################################################
 
 if __name__ == "__main__":
-    run_sim()
+
+    if (len(sys.argv) == 2) and (os.path.isfile(sys.argv[1])):
+        dirname = os.path.dirname(sys.argv[1])
+        run_sim(dirname)
+    else:
+        print("Stupid you, didn't gave me a config.ini")
 
