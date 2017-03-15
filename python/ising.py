@@ -2,7 +2,8 @@
 import itertools
 import numpy as np
 import random
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import matplotlib as mpl
 import os
 import sys
@@ -501,7 +502,8 @@ def load_sim(dirname):
         E = data['E']
         M = data['M']
         A = data['A']
-
+        lat_bond = data['cluster']
+    '''
     print("Finding Errors via Blocking\n")
     
     Sigmas = [MeanBlock(E[100:],500),MeanBlock(M[100:],500)]
@@ -539,6 +541,7 @@ def load_sim(dirname):
     fig.tight_layout()
     plt.legend(loc='best')
     plt.show()
+    '''
     
 #    for i in range(50):
 #        plt.plot(xRange,Sigmas[1][i],label='T = ' + str((1+i)/10))
@@ -552,7 +555,40 @@ def load_sim(dirname):
 #    fig.tight_layout()
 #    plt.show()
     
+
+    # Plotting a lattice + clusters
+    sweep = 3 #TODO loop
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_xlim([0, parameters['lattice_size'][0]])
+    ax.set_ylim([0, parameters['lattice_size'][1]])
+    assert len(parameters['lattice_size']) == 2
+    it = np.nditer(lat_list[sweep], flags=['multi_index'])
+    while not it.finished:
+        s = it.multi_index
+
+        cluster = lat_bond[sweep][s]
+        max_cluster = np.max(lat_bond[sweep])
+        color = plt.cm.rainbow(np.linspace(0,1,max_cluster + 1))
+        if cluster != 0:
+            p2 = patches.Rectangle(s, 1, 1, linewidth=0, fill=True, color=color[cluster], alpha=0.9)
+            ax.add_patch(p2)
+
+        if lat_list[sweep][s] == -1:
+            p1 = patches.Rectangle(s, 1, 1, linewidth=0, fill=None, hatch='--')
+        elif lat_list[sweep][s] == 1:
+            p1 = patches.Rectangle(s, 1, 1, linewidth=0, fill=None, hatch='||')
+        else:
+            p1 = patches.Rectangle(s, 1, 1, linewidth=0, fill=True, color='r', alpha=1)
+        ax.add_patch(p1)
+
+        it.iternext()
+
+    plt.show()
+
     raise NotImplementedError
+
     '''
     Since we now have the blocking, it would be useful to recall the array arrangements here
     As you can see, we now need to apply the blocking to the M matrix so we can apply the coorect
