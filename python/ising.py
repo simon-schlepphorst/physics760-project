@@ -310,11 +310,78 @@ def CS(parameters):
 
     :saves lattice, ..., cluster list:
     '''
-    raise NotImplementedError
+    sweeps = parameters['mc_sweeps']
+    J = parameters['lattice_interaction']
+
+    #creaty list of lattice and initialize first one
+    lat_list = np.array([np.zeros(parameters['lattice_size'], dtype=np.int8) for _ in range(sweeps)])
+    lat_list[0] = init_spin_lattice(parameters['lattice_size'], parameters['lattice_init'])
+
+    bond_list = [np.nan]*sweeps
+
+    #initialize list with easy to spot values
+    T = np.array([parameters['mc_temp']]*sweeps)
+    E = np.array([np.nan]*sweeps)
+    M = np.array([np.nan]*sweeps)
+    A = np.array([np.nan]*sweeps)
+
+    E[0] = energy_simple(lat_list[0], J)
+    M[0] = np.sum(lat_list[0])
+
+
+    with tqdm.tqdm(desc= 'T='+str(T[0]), total=sweeps,  dynamic_ncols=True) as bar:
+        for sweep in range(1, sweeps):
+            bar.update()
+            accept_prop = 1 - np.exp(- 2.0 * J / T[sweep])
+
+            lat_list[sweep] = lat_list[sweep - 1]
+            bonds = []
+
+            # Iterate over lattice
+            it = np.nditer(lat_list[sweep], flags=['multi_index'])
+            while not it.finished:
+
+                point = it.multi_index
+                for neighbor in neighbors(lat_list[sweep], point):
+                    if lat_list[sweep][point] == lat_list[sweep][neighbor] and \
+                            np.random.random() < accept_prop:
+                        points = [point, neighbor]
+                        isbond = [i for i, j in enumerate(bonds) if any(x in j for x in points)]
+                        if isbond:
+                            # merge clusters
+                            first, *rest = [j for i, j in enumerate(bonds) if i in isbond]
+                            rest.append(points)
+
+                            # append elements from lists in rest
+                            for i in rest:
+                                first.extend(j for j in i)
+
+                            first = list(set(first))
+                            bonds = [j for i,j in enumerate(bonds) if i not in isbond] + [first]
+
+                        else:
+                            bonds = bonds + [points]
+
+                    else:
+                        pass
+
+                it.iternext()
+
+            bond_list[sweep] = bonds
+
+            #update spins on lattice
+            for cluster in bond_list[sweep]:
+                new_value = np.random.choice([-1,1]).astype(np.int8)
+                for point in cluster:
+                    lat_list[sweep][point] = new_value
+
+            E[sweep] = energy_simple(lat_list[sweep])
+            M[sweep] = np.sum(lat_list[sweep])
+        bar.update()
 
     with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
         if parameters['save_lat']:
-            np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A)
+            np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A, cluster=bond_list)
         bar.update()
 
 
