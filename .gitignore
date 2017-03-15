@@ -13,3 +13,5 @@ Phys760 Presentation/*.pdf
 Phys760 Presentation/*.snm
 Phys760 Presentation/*.synctex.gz
 Phys760 Presentation/*.toc
+python/runs
+python/simulation.npz
