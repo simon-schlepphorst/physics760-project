@@ -317,7 +317,7 @@ def CS(parameters):
     lat_list = np.array([np.zeros(parameters['lattice_size'], dtype=np.int8) for _ in range(sweeps)])
     lat_list[0] = init_spin_lattice(parameters['lattice_size'], parameters['lattice_init'])
 
-    bond_list = [np.nan]*sweeps
+    lat_bond = np.array([np.zeros(parameters['lattice_size'], dtype=np.int) for _ in range(sweeps)])
 
     #initialize list with easy to spot values
     T = np.array([parameters['mc_temp']]*sweeps)
@@ -367,13 +367,12 @@ def CS(parameters):
 
                 it.iternext()
 
-            bond_list[sweep] = bonds
-
             #update spins on lattice
-            for cluster in bond_list[sweep]:
+            for index, cluster in enumerate(bonds, start=1):
                 new_value = np.random.choice([-1,1]).astype(np.int8)
                 for point in cluster:
                     lat_list[sweep][point] = new_value
+                    lat_bond[sweep][point] = index
 
             E[sweep] = energy_simple(lat_list[sweep])
             M[sweep] = np.sum(lat_list[sweep])
@@ -381,7 +380,7 @@ def CS(parameters):
 
     with tqdm.tqdm(desc='Saving ...', total=1, dynamic_ncols=True) as bar:
         if parameters['save_lat']:
-            np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A, cluster=bond_list)
+            np.savez_compressed(os.path.join(parameters['dirname'], "simulation.npz"), lat=lat_list, T=T, E=E, M=M, A=A, cluster=lat_bond)
         bar.update()
 
 
