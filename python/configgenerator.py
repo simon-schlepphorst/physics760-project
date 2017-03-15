@@ -37,8 +37,8 @@ config = configparser.ConfigParser()
 with open('config.ini') as f:
     config.read_file(f)
 
-T = [1.0, 1.3, 1.6, 1.8, 2.0, 2.2, 2.3]
-#T = [2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 4.0]
+T = [1.0, 1.3, 1.6, 1.8, 2.0, 2.2, 2.3] #Cip04
+#T = [2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 4.0] #Cip03
 
 for temp in T:
     config.set('markov chain', 'temperature', str(temp))
