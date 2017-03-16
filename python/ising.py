@@ -510,7 +510,7 @@ def load_sim(dirname, Plot=False):
 
     # setting relax sweeps to thermalise first
     if parameters['mc_algorithm'] == 'Monte Carlo':
-        parameters['relax_sweeps'] = 1000
+        parameters['relax_sweeps'] = 500
     elif parameters['mc_algorithm'] == 'Cluster':
         parameters['relax_sweeps'] = 200
     else:
@@ -726,7 +726,6 @@ def full_sim(dirname, dirnames):
             #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
 
             fig, axarr = plt.subplots(6,2,figsize=(20,14))
-            plt.suptitle('$k_b T={:1.2f}$'.format(temp))
 
             for i, init in enumerate(['cold', 'random', 'hot']):
                 mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
@@ -738,25 +737,24 @@ def full_sim(dirname, dirnames):
                     Energy = list_all[j][3]
                     Magnet = list_all[j][4]
                     axarr[2*i, 0].plot(np.arange(len(Energy)), Energy, color=c)
-                    axarr[2*i, 0].set_title('Energy vs Time, starting {}'.format(init))
+                    axarr[2*i, 0].set_title('Energy vs Time, starting {}, at $k_b T = {}$'.format(init, temp))
                     axarr[2*i, 0].set_ylim(-2, 0)
                     axarr[2*i+1, 0].plot(np.arange(len(Magnet)), Magnet, color=c)
-                    axarr[2*i+1, 0].set_title('Magnetisation vs Time, starting {}'.format(init))
+                    axarr[2*i+1, 0].set_title('Magnetisation vs Time, starting {}, at $k_b T = {}$'.format(init, temp))
                     axarr[2*i+1, 0].set_ylim(-1, 1)
 
                     Energy = list_all[j][1]
                     Magnet = list_all[j][2]
                     axarr[2*i, 1].plot(np.arange(len(Energy)), Energy, color=c)
-                    axarr[2*i, 1].set_title('Error of Energy vs Time, starting {}'.format(init))
+                    axarr[2*i, 1].set_title('Error of Energy vs Blocksize, starting {}, at $k_b T = {}$'.format(init, temp))
                     axarr[2*i+1, 1].plot(np.arange(len(Magnet)), Magnet, color=c)
-                    axarr[2*i+1, 1].set_title('Error of Magnetisation vs Time, starting {}'.format(init))
+                    axarr[2*i+1, 1].set_title('Error of Magnetisation vs Blocksize, starting {}, at $k_b T = {}$'.format(init, temp))
 
             fig.tight_layout()
             plt.savefig(os.path.join(dirname, '{}_{}.png'.format(algo, temp)))
             plt.close()
 
         fig, axarr = plt.subplots(3,2,figsize=(20,14))
-        plt.suptitle('{}'.format(algo))
 
         for temp, sims in itertools.groupby(mask_temp, lambda x: x[0]):
             mask_sim = [k[1] for k in sims]
@@ -774,17 +772,17 @@ def full_sim(dirname, dirnames):
                     err_block = 125
                     block_start = list_all[j][0]['relax_sweeps']
 
-                    Energy = np.sum(list_all[j][3][block_start:])
+                    Energy = np.mean(list_all[j][3][block_start:])
                     dEnergy = list_all[j][1][err_block]
 
-                    Magnet = np.sum(list_all[j][4][block_start:])
+                    Magnet = np.mean(list_all[j][4][block_start:])
                     dMagnet = list_all[j][2][err_block]
 
                     axarr[i, 0].errorbar(temp, Energy, yerr=dEnergy, color=c, fmt='o')
-                    axarr[i, 0].set_title('Energy vs Temperature, starting {}'.format(init))
+                    axarr[i, 0].set_title('{}: Energy vs Temperature, starting {}'.format(algo, init))
                     #axarr[i, 0].set_ylim(-2, 0)
                     axarr[i, 1].errorbar(temp, Magnet, yerr=dMagnet, color=c, fmt='o')
-                    axarr[i, 1].set_title('Magnetisation vs Temperature, starting {}'.format(init))
+                    axarr[i, 1].set_title('{}: Magnetisation vs Temperature, starting {}'.format(algo, init))
                     #axarr[i, 1].set_ylim(-1, 1)
 
         fig.tight_layout()
