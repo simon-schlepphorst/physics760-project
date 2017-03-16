@@ -246,7 +246,7 @@ Here there were 4 total runs per lattice initial configuration.
 \fbox{\parbox{\textwidth}{Overview of the Cluster algorithm:
 	\begin{enumerate}
 		\item Pick a point in the lattice
-		\item Try to form a bond to its neighbour with propability $1 - \mathrm{e}^{\frac{2J}{k_B T}}$
+		\item Try to form a bond to its neighbour with propability $1 - \mathrm{e}^{2J\beta}$
 		\item If a bond is formed add the to points to a cluster
 		\item repeat step 1 to 3 until you visited every point on the lattice
 		\item assign a random spin value to each cluster
@@ -307,7 +307,7 @@ Finally, Here there were 2 total runs per lattice initial configuration.
 \includepdf[pages={-}, addtotoc={1,subsection,2,Energy,MCE}, scale=0.9]{_build/Monte-Carlo_Energy.pdf}
 \includepdf[pages={-}, addtotoc={1,subsection,2,Magnetisation,MCM}, scale=0.9]{_build/Monte-Carlo_Magnetisation.pdf}
 
-\invisiblesection{Cluster Agorithm}
+\invisiblesection{Swendsen-Wang Agorithm}
 \includepdf[pages={-}, addtotoc={1,subsection,2,Temperature,CLT}, scale=0.9]{_build/Cluster_Temperatures.pdf}
 \includepdf[pages={-}, addtotoc={1,subsection,2,Energy,CLE}, scale=0.9]{_build/Cluster_Energy.pdf}
 \includepdf[pages={-}, addtotoc={1,subsection,2,Magnetisation,CLM}, scale=0.9]{_build/Cluster_Magnetisation.pdf}
