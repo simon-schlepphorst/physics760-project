@@ -8,6 +8,11 @@
 \usepackage{amsmath, amssymb}
 \usepackage{pdfpages}
 
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
 \begin{document}
 
 \author{Simon Schlepphorst \and Federico Diaz Capriles}
@@ -66,15 +71,19 @@ Abstract ...
 \section{Cluster Algorithm}
 
 \subsection{Results}
+\pageref{MCT}
 
 \subsection{Problems and Limitations}
 
 \appendix
-\includepdf[pages={-}, scale=0.9]{_build/Monte-Carlo_Temperatures.pdf}
-\includepdf[pages={-}, scale=0.9]{_build/Monte-Carlo_Energy.pdf}
-\includepdf[pages={-}, scale=0.9]{_build/Monte-Carlo_Magnetisation.pdf}
-\includepdf[pages={-}, scale=0.9]{_build/Cluster_Temperatures.pdf}
-\includepdf[pages={-}, scale=0.9]{_build/Cluster_Energy.pdf}
-\includepdf[pages={-}, scale=0.9]{_build/Cluster_Magnetisation.pdf}
+\invisiblesection{Metropolis Algorithm}
+\includepdf[pages={-}, addtotoc={1,subsection,2,Temperature,MCT}, scale=0.9]{_build/Monte-Carlo_Temperatures.pdf}
+\includepdf[pages={-}, addtotoc={1,subsection,2,Energy,MCE}, scale=0.9]{_build/Monte-Carlo_Energy.pdf}
+\includepdf[pages={-}, addtotoc={1,subsection,2,Magnetisation,MCM}, scale=0.9]{_build/Monte-Carlo_Magnetisation.pdf}
+
+\invisiblesection{Cluster Agorithm}
+\includepdf[pages={-}, addtotoc={1,subsection,2,Energy,CLT}, scale=0.9]{_build/Cluster_Temperatures.pdf}
+\includepdf[pages={-}, addtotoc={1,subsection,2,Energy,CLE}, scale=0.9]{_build/Cluster_Energy.pdf}
+\includepdf[pages={-}, addtotoc={1,subsection,2,Energy,CLM}, scale=0.9]{_build/Cluster_Magnetisation.pdf}
 
 \end{document}
