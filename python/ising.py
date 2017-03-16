@@ -511,12 +511,10 @@ def load_sim(dirname, Plot=False):
             T *= 0.5
 
     # fix for magnetisation
-    for j, i in enumerate(lat_list):
-        M[j] = np.sqrt(np.square(np.mean(i)))
+    M = np.abs(M)
 
     # set Energy to abs value
-    for j, i in enumerate(E):
-        E[j] = np.abs(i)
+    E = np.abs(E) / 2
 
     # setting relax sweeps to thermalise first
     if parameters['mc_algorithm'] == 'Monte Carlo':
@@ -735,69 +733,153 @@ def full_sim(dirname, dirnames):
             mask_sim = [k[1] for k in sims]
             #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
 
-            fig, axarr = plt.subplots(6,2,figsize=(20,12))
+            if False: # Plot Energy, Magnetisation for every configuration to png
+                fig, axarr = plt.subplots(6,2,figsize=(20,12))
 
-            for i, init in enumerate(['cold', 'random', 'hot']):
-                mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
-                #mask_init := [0, 1, 2, 36, 37, 38, 39]
+                for i, init in enumerate(['cold', 'random', 'hot']):
+                    mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
+                    #mask_init := [0, 1, 2, 36, 37, 38, 39]
 
-                color = iter(plt.cm.rainbow(np.linspace(0,1,len(mask_init))))
-                for j in mask_init:
-                    c = next(color)
-                    Energy = list_all[j][3]
-                    Magnet = list_all[j][4]
-                    axarr[2*i, 0].plot(np.arange(len(Energy)), Energy, color=c)
-                    axarr[2*i, 0].set_title('Energy vs Time, starting {}, at $k_b T = {}$'.format(init, temp))
-                    axarr[2*i, 0].set_ylim(0, 2)
-                    axarr[2*i+1, 0].plot(np.arange(len(Magnet)), Magnet, color=c)
-                    axarr[2*i+1, 0].set_title('Magnetisation vs Time, starting {}, at $k_b T = {}$'.format(init, temp))
-                    axarr[2*i+1, 0].set_ylim(0, 1)
+                    color = iter(plt.cm.rainbow(np.linspace(0,1,len(mask_init))))
+                    for j in mask_init:
+                        c = next(color)
+                        Energy = list_all[j][3]
+                        Magnet = list_all[j][4]
+                        axarr[2*i, 0].plot(np.arange(len(Energy)), Energy, color=c)
+                        axarr[2*i, 0].set_title('Energy vs Time, starting {}, at $k_b T = {}$'.format(init, temp))
+                        axarr[2*i, 0].set_ylim(0, 2)
+                        axarr[2*i+1, 0].plot(np.arange(len(Magnet)), Magnet, color=c)
+                        axarr[2*i+1, 0].set_title('Magnetisation vs Time, starting {}, at $k_b T = {}$'.format(init, temp))
+                        axarr[2*i+1, 0].set_ylim(0, 1)
 
-                    Energy = list_all[j][1]
-                    Magnet = list_all[j][2]
-                    axarr[2*i, 1].plot(np.arange(len(Energy)), Energy, color=c)
-                    axarr[2*i, 1].set_title('Error of Energy vs Blocksize, starting {}, at $k_b T = {}$'.format(init, temp))
-                    axarr[2*i+1, 1].plot(np.arange(len(Magnet)), Magnet, color=c)
-                    axarr[2*i+1, 1].set_title('Error of Magnetisation vs Blocksize, starting {}, at $k_b T = {}$'.format(init, temp))
+                        Energy = list_all[j][1]
+                        Magnet = list_all[j][2]
+                        axarr[2*i, 1].plot(np.arange(len(Energy)), Energy, color=c)
+                        axarr[2*i, 1].set_title('Error of Energy vs Blocksize, starting {}, at $k_b T = {}$'.format(init, temp))
+                        axarr[2*i+1, 1].plot(np.arange(len(Magnet)), Magnet, color=c)
+                        axarr[2*i+1, 1].set_title('Error of Magnetisation vs Blocksize, starting {}, at $k_b T = {}$'.format(init, temp))
+
+                fig.tight_layout()
+                plt.savefig(os.path.join(dirname, '{}_{}.png'.format(algo, temp)))
+                plt.close()
+
+        if False: # Plot Energy, Magnetisation vs Time to png
+            fig, axarr = plt.subplots(3,2,figsize=(20,12))
+
+            for temp, sims in itertools.groupby(mask_temp, lambda x: x[0]):
+                mask_sim = [k[1] for k in sims]
+                #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
+
+
+                for i, init in enumerate(['cold', 'random', 'hot']):
+                    mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
+                    #mask_init := [0, 1, 2, 36, 37, 38, 39]
+
+                    color = iter(plt.cm.rainbow(np.linspace(0,1,len(mask_init))))
+                    for j in mask_init:
+                        c = next(color)
+
+                        err_block = 125
+                        block_start = list_all[j][0]['relax_sweeps']
+
+                        Energy = np.mean(list_all[j][3][block_start:])
+                        dEnergy = list_all[j][1][err_block]
+
+                        Magnet = np.mean(list_all[j][4][block_start:])
+                        dMagnet = list_all[j][2][err_block]
+
+                        axarr[i, 0].errorbar(temp, Energy, yerr=dEnergy, color=c, fmt='o')
+                        axarr[i, 0].set_title('{}: Energy vs Temperature, starting {}'.format(algo, init))
+                        #axarr[i, 0].set_ylim(-2, 0)
+                        axarr[i, 1].errorbar(temp, Magnet, yerr=dMagnet, color=c, fmt='o')
+                        axarr[i, 1].set_title('{}: Magnetisation vs Temperature, starting {}'.format(algo, init))
+                        #axarr[i, 1].set_ylim(-1, 1)
 
             fig.tight_layout()
-            plt.savefig(os.path.join(dirname, '{}_{}.png'.format(algo, temp)))
+            plt.savefig(os.path.join(dirname, '{}_Temperatures.png'.format(algo)))
             plt.close()
 
-        fig, axarr = plt.subplots(3,2,figsize=(20,12))
+        mpl.rcParams.update({'font.size':8})
+        figdir = '../latex/report/figures'
+        if not os.path.isdir(figdir):
+            os.makedirs(figdir)
 
-        for temp, sims in itertools.groupby(mask_temp, lambda x: x[0]):
-            mask_sim = [k[1] for k in sims]
-            #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
+        if True: # Plot Energy, Magnetisation vs Time to A4 ps
+            fig, axarr = plt.subplots(3,2,figsize=(8.27, 11.69))
+
+            for temp, sims in itertools.groupby(mask_temp, lambda x: x[0]):
+                mask_sim = [k[1] for k in sims]
+                #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
 
 
-            for i, init in enumerate(['cold', 'random', 'hot']):
-                mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
-                #mask_init := [0, 1, 2, 36, 37, 38, 39]
+                for i, init in enumerate(['cold', 'random', 'hot']):
+                    mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
+                    #mask_init := [0, 1, 2, 36, 37, 38, 39]
 
-                color = iter(plt.cm.rainbow(np.linspace(0,1,len(mask_init))))
-                for j in mask_init:
-                    c = next(color)
+                    color = iter(plt.cm.rainbow(np.linspace(0,1,len(mask_init))))
+                    for j in mask_init:
+                        c = next(color)
 
-                    err_block = 125
-                    block_start = list_all[j][0]['relax_sweeps']
+                        err_block = 125
+                        block_start = list_all[j][0]['relax_sweeps']
 
-                    Energy = np.mean(list_all[j][3][block_start:])
-                    dEnergy = list_all[j][1][err_block]
+                        Energy = np.mean(list_all[j][3][block_start:])
+                        dEnergy = list_all[j][1][err_block]
 
-                    Magnet = np.mean(list_all[j][4][block_start:])
-                    dMagnet = list_all[j][2][err_block]
+                        Magnet = np.mean(list_all[j][4][block_start:])
+                        dMagnet = list_all[j][2][err_block]
 
-                    axarr[i, 0].errorbar(temp, Energy, yerr=dEnergy, color=c, fmt='o')
-                    axarr[i, 0].set_title('{}: Energy vs Temperature, starting {}'.format(algo, init))
-                    #axarr[i, 0].set_ylim(-2, 0)
-                    axarr[i, 1].errorbar(temp, Magnet, yerr=dMagnet, color=c, fmt='o')
-                    axarr[i, 1].set_title('{}: Magnetisation vs Temperature, starting {}'.format(algo, init))
-                    #axarr[i, 1].set_ylim(-1, 1)
+                        axarr[i, 0].errorbar(temp, Energy, yerr=dEnergy, color=c, fmt='o')
+                        axarr[i, 0].set_title('{}: Energy - starting {}'.format(algo, init))
+                        axarr[i, 0].set_xlabel('Temperature [$k_b T$]')
+                        axarr[i, 0].set_ylabel('Energy [$\%$]')
+                        axarr[i, 0].set_ylim(0, 1.05)
 
-        fig.tight_layout()
-        plt.savefig(os.path.join(dirname, '{}_Temperatures.png'.format(algo)))
-        plt.close()
+                        axarr[i, 1].errorbar(temp, Magnet, yerr=dMagnet, color=c, fmt='o')
+                        axarr[i, 1].set_title('{}: Magnetisation - starting {}'.format(algo, init))
+                        axarr[i, 1].set_xlabel('Temperature [$k_b T$]')
+                        axarr[i, 1].set_ylabel('Magnetisation [$\%$]')
+                        axarr[i, 1].set_ylim(0, 1.05)
+
+            fig.tight_layout()
+            plt.savefig(os.path.join(figdir, '{}_Temperatures.ps'.format(algo.replace(' ','-'))))
+            plt.close()
+
+        if True: # Plot Energy, Magnetisation for every configuration to A4 ps
+            for temp, sims in itertools.groupby(mask_temp, lambda x: x[0]):
+                if temp != 2.3:
+                    continue
+                mask_sim = [k[1] for k in sims]
+                #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
+
+                for k, kind in enumerate(['Energy', 'Magnetisation']):
+                    fig, axarr = plt.subplots(3,2,figsize=(8.27, 11.69))
+
+                    for i, init in enumerate(['cold', 'random', 'hot']):
+                        mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
+                        #mask_init := [0, 1, 2, 36, 37, 38, 39]
+
+                        color = iter(plt.cm.rainbow(np.linspace(0,1,len(mask_init))))
+                        for j in mask_init:
+                            c = next(color)
+                            Energy = list_all[j][3]
+                            Magnet = list_all[j][4]
+                            axarr[i, 0].plot(np.arange(len(Energy)), Energy, color=c)
+                            axarr[i, 0].set_title('{}: {} - at $k_b T = {}$, starting {}'.format(algo, kind, temp, init))
+                            axarr[i, 0].set_xlabel('Simulation Time')
+                            axarr[i, 0].set_ylabel('{} [$\%$]'.format(kind))
+                            axarr[i, 0].set_ylim(0, 1.05)
+
+                            Energy = list_all[j][1]
+                            Magnet = list_all[j][2]
+                            axarr[i, 1].plot(np.arange(len(Energy)), Energy, color=c)
+                            axarr[i, 1].set_title('{}: $\sigma$ {} - at $k_b T = {}$, starting {}'.format(algo, kind, temp, init))
+                            axarr[i, 1].set_xlabel('# Blocksize')
+                            axarr[i, 1].set_ylabel('$\sigma$ [{}]'.format(kind))
+
+                    fig.tight_layout()
+                    plt.savefig(os.path.join(figdir, '{}_{}.ps'.format(algo.replace(' ','-'), kind)), papertype='a4')
+                    plt.close()
 
 ###############################################################################
 #           Execute some stuff if directly called                             #
