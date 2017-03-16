@@ -727,7 +727,7 @@ def full_sim(dirname, dirnames):
             mask_sim = [k[1] for k in sims]
             #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
 
-            fig, axarr = plt.subplots(6,2,figsize=(20,14))
+            fig, axarr = plt.subplots(6,2,figsize=(20,12))
 
             for i, init in enumerate(['cold', 'random', 'hot']):
                 mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
@@ -756,7 +756,7 @@ def full_sim(dirname, dirnames):
             plt.savefig(os.path.join(dirname, '{}_{}.png'.format(algo, temp)))
             plt.close()
 
-        fig, axarr = plt.subplots(3,2,figsize=(20,14))
+        fig, axarr = plt.subplots(3,2,figsize=(20,12))
 
         for temp, sims in itertools.groupby(mask_temp, lambda x: x[0]):
             mask_sim = [k[1] for k in sims]
