@@ -8,6 +8,9 @@
 \usepackage{amsmath, amssymb}
 \usepackage{pdfpages}
 
+\usepackage{biblatex}
+\addbibresource{cite.bib}
+
 \newcommand\invisiblesection[1]{%
   \refstepcounter{section}%
   \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
@@ -183,23 +186,120 @@ definition:
 
 All these properties allow us to use Markov chains to simulate a lattice and
 see how the states transition.
-\subsection{Markov Chains Monte Carlo}
 	
 
 \section{Metropolis-Hastings Algorithm}
 \subsection{Algorithm}
+\fbox{\parbox{\textwidth}{Overview of the MH algorithm:
+	\begin{enumerate}
+		\item Pick a point in the lattice with selection probability
+		\item Calculate energy change via Hamiltonian
+		\item If the energy is lowered by flipping, then the flip is accepted
+		\item If the energy is raised by flipping, then only accept the flip with probability $ exp(-\beta \Delta E) $
+		\item repeat with more points until a criteria is met
+\end{enumerate}}}
 
 \subsection{Results}
+In page \pageref{MCT}, one can see the energy and magnetization curves starting
+with cold lattice, followed by randomly generated sites, and lastly starting a
+hot. When starting cold, the lattice is oriented as completely magnetic (all
+spins are alligned). If the starting configuration is hot, then the lattice
+will start with sites alternating in spin (up, down, up, down, ...). All
+lattices were of dimensions 100$\times$100.
 
-\subsection{Problems and Limitations}
+On the left column, it can be seen that the average energies as compared to
+temperatures remain fairly constant and a phase transition can be seen
+relatively easily in the range of 2.0 to 2.5.
+
+On the right column, the phase transition is just as prominent. It should be
+noted that starting with hot or random lattices, there is a lot of spreading
+happening at the lower temperatures. This is attributed to a problem in the
+algorithm where there is a configuration possible where the lattice becomes
+sectioned in such a way that transition is highly unlikely. Then the lattice
+will have bands of alternating spin and so a fractional or no magnetization
+will be gathered. In order to combat this kind of issue, the results for the
+magnetization should be considered more for a cold starting lattice. Otherwise,
+granting hot starting lattices more time should eventually lead to an uniform
+distribution. Lastly, the clustering algorithm discussed in the next section
+will also avoid this problem.
+
+In page \pageref{MCE}, one can see the energy as a function of time on the left
+hand side and the blocking error calculation on the right hand side. The
+energies, regardless of initial conditions seem to converge on the same value
+which is to be expected. For this temperature slice, a block size of 100 was
+chosen for our error bars.
+
+In page \pageref{MCM}, one can see the magnetization as a function of sampling
+time on the left column and the blocking analysis on the right hand side with
+the corresponding starting conditions. Again, all values for magnetization seem
+to converge to a similar value regardless of initial lattice state. Blocking
+size was the same as for the energy calculation.
+
+One final note, each color denotes a run of the simulation for a given starting
+condition. For example, there are 4 colored lines in the cold labeled graphs
+and this means that there were 4 simulations with 4 cold starting lattices.
+Here there were 4 total runs per lattice initial configuration.
+
 
 \section{Swendsen-Wang Algorithm}
 \subsection{Algorithm}
+\fbox{\parbox{\textwidth}{Overview of the Cluster algorithm:
+	\begin{enumerate}
+		\item Pick a point in the lattice
+		\item Try to form a bond to its neighbour with propability $1 - \mathrm{e}^{\frac{2J}{k_B T}}$
+		\item If a bond is formed add the to points to a cluster
+		\item repeat step 1 to 3 until you visited every point on the lattice
+		\item assign a random spin value to each cluster
+		\item repeat
+\end{enumerate}}}
+
 
 \subsection{Results}
-\pageref{MCT}
+In page \pageref{CLT}, one can see the energy and magnetization curves starting
+with cold lattice, followed by randomly generated sites, and lastly starting a
+hot. Initial lattice conditions were the same as the previous analysis. All
+lattices were of dimensions 32$\times$32.
 
-\subsection{Problems and Limitations}
+On the left column, it can be seen that the average energies as compared to
+temperatures remain fairly constant and a phase transition can be seen
+relatively easily in the range of 2.0 to 2.5. This is the same as before.
+However one should note that the error bars are more apparent for the
+clustering algorithm. This can be due to lattice size. Since time was an issue,
+we opted for a smaller lattice in order to save on time and computing power.
+The smaller lattice size allowed the clusters to become a significant fraction
+of the overall lattice.
+
+On the right column, the phase transition is just as prominent. Unlike the last
+algorithm, the bands of spin alignment were not observed. Instead we get a very
+nicely defined magnetization vs temperature graph as the bands would allow for
+clustering and this clustering in turn makes it easier for the band to flip.
+
+In page \pageref{CLE}, one can see the energy as a function of time on the left
+hand side and the blocking error calculation on the right hand side. The
+energies, regardless of initial conditions seem to converge on the same value
+which is to be expected. For this temperature slice, a block size of 100 was
+chosen for our error bars. It should be noted that the errors were greater for
+the clustering than for the Metropolis algorithm. As explained previously, this
+is due to the smaller lattice size.
+
+In page \pageref{CLM}, one can see the magnetization as a function of sampling
+time on the left column and the blocking analysis on the right hand side with
+the corresponding starting conditions. Again, all values for magnetization seem
+to converge to a similar value regardless of initial lattice state. Blocking
+size was the same as for the energy calculation.
+
+Finally, Here there were 2 total runs per lattice initial configuration.
+
+
+
+
+
+\nocite{script}
+\nocite{wiki:xxx}
+\nocite{Binder:1339249}
+\nocite{Onsager:429051}
+\nocite{PhysRevLett.60.1591}
+\printbibliography
 
 \appendix
 \invisiblesection{Metropolis-Hastings Algorithm}
