@@ -5,13 +5,13 @@ python/Videos
 python/Saves
 python/save.npz
 *__pycache__
-Phys760 Presentation/*.aux
-Phys760 Presentation/*.log
-Phys760 Presentation/*.nav
-Phys760 Presentation/*.out
-Phys760 Presentation/*.pdf
-Phys760 Presentation/*.snm
-Phys760 Presentation/*.synctex.gz
-Phys760 Presentation/*.toc
+latex/*/*.aux
+latex/*/*.log
+latex/*/*.nav
+latex/*/*.out
+latex/*/*.pdf
+latex/*/*.snm
+latex/*/*.synctex.gz
+latex/*/*.toc
 python/runs
 python/simulation.npz
