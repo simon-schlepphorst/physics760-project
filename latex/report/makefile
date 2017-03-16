@@ -14,7 +14,7 @@ _build:
 	mkdir -p _build
 
 _build/%.pdf: %.tex $(all_fig)
-	latexmk -gg -pdflatex='pdflatex -halt-on-error -interaction=batchmode' -pdf -output-directory='_build' $<
+	latexmk -pdflatex='pdflatex -halt-on-error -interaction=batchmode' -pdf -output-directory='_build' $<
 
 _build/%.pdf: figures/%.ps _build
 	ps2pdf -sPAPERSIZE=a4 "$<" "$@"
