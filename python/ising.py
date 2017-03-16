@@ -9,6 +9,8 @@ import os
 import sys
 import tqdm
 
+import IPython
+
 import configparser
 
 ###############################################################################
@@ -135,7 +137,7 @@ def MeanBlock(array, limit):
     for blocksize in range(1, limit):
 
         last_index = len(array) - len(array) % blocksize
-        if last_index < 0:
+        if last_index <= 0:
             Sigmas.append(np.nan)
             continue
         Array = np.array([array[i:i+blocksize] for i in range(0,last_index, blocksize)])
@@ -242,10 +244,10 @@ def cluster_energy_change(lattice, clist, j=1):
 #           Image saving parameters                                           #
 ###############################################################################
 
-mpl.rcParams.update({'font.size': 22})
-cmap = mpl.colors.ListedColormap(['black','white'])
-bounds=[-1,0,1]
-norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+#mpl.rcParams.update({'font.size': 22})
+#cmap = mpl.colors.ListedColormap(['black','white'])
+#bounds=[-1,0,1]
+#norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 ###############################################################################
 #           Run simulations                                                   #
@@ -308,8 +310,8 @@ def RS(parameters):
 
 def CS(parameters):
     ''' Swendsen-Wang Cluster algorithm
-
-    :saves lattice, ..., cluster list:
+    :param dict parameters: dictionary with parameters
+    :saves lattice, T, E, M, A, cluster:
     '''
     sweeps = parameters['mc_sweeps']
     J = parameters['lattice_interaction']
@@ -466,7 +468,7 @@ def run_sim(dirname):
 ###############################################################################
     #TODO Calculation of the results should happen in extra function
     #     so reading runs from file is supported
-def load_sim(dirname):
+def load_sim(dirname, Plot=False):
     '''load simulation
     :param str dirname: directory to load the simulation from
     :return dict dictionary: dictionary containing the results for given simualtion
@@ -499,10 +501,60 @@ def load_sim(dirname):
     with np.load(os.path.join(parameters['dirname'], 'simulation.npz')) as data:
         lat_list = data['lat']
         T = data['T']
-        E = data['E']
-        M = data['M']
+        # normalize on lattice size
+        E = data['E'] / len(lat_list[0].flatten())
+        M = data['M'] / len(lat_list[0].flatten())
         A = data['A']
-        lat_bond = data['cluster']
+        if parameters['mc_algorithm'] == 'Cluster':
+            lat_bond = data['cluster']
+
+    # setting relax sweeps to thermalise first
+    if parameters['mc_algorithm'] == 'Monte Carlo':
+        parameters['relax_sweeps'] = 1000
+    elif parameters['mc_algorithm'] == 'Cluster':
+        parameters['relax_sweeps'] = 200
+    else:
+        raise NotImplementedError
+
+
+    # make one big plot with subplots
+    if Plot:
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
+        plt.suptitle('Temperature, $k_b T={:1.2f}$, starting {}'.format(parameters['mc_temp'], parameters['lattice_init']))
+
+    # Plot E, M against time
+    if Plot:
+        ax1.set_title('E, M vs Time')
+        ax1.set_xlabel('Sweep')
+        ax1.set_ylabel('#')
+        ax1.plot(np.arange(len(E)), E, 'r-o', label='Energy')
+        ax1.plot(np.arange(len(M)), M, 'b-*', label='Magnetisation')
+        ax1.legend(loc='best')
+
+    # calculate errors with blocking
+    max_blocksize = (parameters['mc_sweeps'] - parameters['relax_sweeps']) // 2
+
+    E_sigma_b = np.sqrt(MeanBlock(E[parameters['relax_sweeps']:], max_blocksize))
+    M_sigma_b = np.sqrt(MeanBlock(M[parameters['relax_sweeps']:], max_blocksize))
+    blocks = np.arange(len(E_sigma_b))
+
+    # Plot blocksize vs sigma
+    if Plot:
+        ax2.set_title('Error vs Block Size')
+        ax2.set_xlabel('Block Size')
+        ax2.set_ylabel('$\sigma$')
+        ax2.plot(blocks, E_sigma_b, 'r-o', label='Energy')
+        ax2.plot(blocks, M_sigma_b, 'b-*', label='Magnetisation')
+        ax2.legend(loc='best')
+
+    if Plot:
+        fig.tight_layout()
+        plt.show()
+
+
+    # return values for comparisation
+    return parameters, E_sigma_b, M_sigma_b, E, M, A
+
     '''
     print("Finding Errors via Blocking\n")
     
@@ -651,6 +703,93 @@ def load_sim(dirname):
     #plt.legend(loc='best')
     #plt.show()
 
+
+def full_sim(dirname, dirnames):
+    '''
+    loads all simulations foud in dirnames and runs load_sim() on them
+    '''
+    #mpl.rcParams.update({'font.size': 22})
+
+    list_all = []
+
+    with tqdm.tqdm(desc= "crunching", total=len(dirnames), dynamic_ncols=True) as bar:
+        for subdir in dirnames:
+            list_all.append(load_sim(subdir, Plot=False))
+            bar.update()
+
+    for algo in ['Monte Carlo', 'Cluster']:
+        mask_algo = [i for i,j in enumerate(list_all) if j[0]['mc_algorithm'] == algo]
+        mask_temp = [(j[0]['mc_temp'], i) for i,j in enumerate(list_all) if i in mask_algo]
+        mask_temp = sorted(mask_temp)
+        for temp, sims in itertools.groupby(mask_temp, lambda x: x[0]):
+            mask_sim = [k[1] for k in sims]
+            #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
+
+            fig, axarr = plt.subplots(6,2,figsize=(20,14))
+            plt.suptitle('$k_b T={:1.2f}$'.format(temp))
+
+            for i, init in enumerate(['cold', 'random', 'hot']):
+                mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
+                #mask_init := [0, 1, 2, 36, 37, 38, 39]
+
+                color = iter(plt.cm.rainbow(np.linspace(0,1,len(mask_init))))
+                for j in mask_init:
+                    c = next(color)
+                    Energy = list_all[j][3]
+                    Magnet = list_all[j][4]
+                    axarr[2*i, 0].plot(np.arange(len(Energy)), Energy, color=c)
+                    axarr[2*i, 0].set_title('Energy vs Time, starting {}'.format(init))
+                    axarr[2*i, 0].set_ylim(-2, 0)
+                    axarr[2*i+1, 0].plot(np.arange(len(Magnet)), Magnet, color=c)
+                    axarr[2*i+1, 0].set_title('Magnetisation vs Time, starting {}'.format(init))
+                    axarr[2*i+1, 0].set_ylim(-1, 1)
+
+                    Energy = list_all[j][1]
+                    Magnet = list_all[j][2]
+                    axarr[2*i, 1].plot(np.arange(len(Energy)), Energy, color=c)
+                    axarr[2*i, 1].set_title('Error of Energy vs Time, starting {}'.format(init))
+                    axarr[2*i+1, 1].plot(np.arange(len(Magnet)), Magnet, color=c)
+                    axarr[2*i+1, 1].set_title('Error of Magnetisation vs Time, starting {}'.format(init))
+
+            fig.tight_layout()
+            plt.savefig(os.path.join(dirname, '{}_{}.png'.format(algo, temp)))
+            plt.close()
+
+        fig, axarr = plt.subplots(3,2,figsize=(20,14))
+        plt.suptitle('{}'.format(algo))
+
+        for temp, sims in itertools.groupby(mask_temp, lambda x: x[0]):
+            mask_sim = [k[1] for k in sims]
+            #mask_sim := [0, 1, 2, 3, 4, 5, 6, 7, 8, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
+
+
+            for i, init in enumerate(['cold', 'random', 'hot']):
+                mask_init = [i for i in mask_sim if list_all[i][0]['lattice_init'] == init]
+                #mask_init := [0, 1, 2, 36, 37, 38, 39]
+
+                color = iter(plt.cm.rainbow(np.linspace(0,1,len(mask_init))))
+                for j in mask_init:
+                    c = next(color)
+
+                    err_block = 125
+                    block_start = list_all[j][0]['relax_sweeps']
+
+                    Energy = np.sum(list_all[j][3][block_start:])
+                    dEnergy = list_all[j][1][err_block]
+
+                    Magnet = np.sum(list_all[j][4][block_start:])
+                    dMagnet = list_all[j][2][err_block]
+
+                    axarr[i, 0].errorbar(temp, Energy, yerr=dEnergy, color=c, fmt='o')
+                    axarr[i, 0].set_title('Energy vs Temperature, starting {}'.format(init))
+                    #axarr[i, 0].set_ylim(-2, 0)
+                    axarr[i, 1].errorbar(temp, Magnet, yerr=dMagnet, color=c, fmt='o')
+                    axarr[i, 1].set_title('Magnetisation vs Temperature, starting {}'.format(init))
+                    #axarr[i, 1].set_ylim(-1, 1)
+
+        fig.tight_layout()
+        plt.savefig(os.path.join(dirname, '{}_Temperatures.png'.format(algo)))
+        plt.close()
 
 ###############################################################################
 #           Execute some stuff if directly called                             #
