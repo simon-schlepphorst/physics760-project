@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 
-all_rst := $(wildcard *.tex)
+all_rst := $(wildcard PHY760*.tex)
 all_pdf := $(all_rst:%.tex=_build/%.pdf)
 
 all: $(all_pdf)
