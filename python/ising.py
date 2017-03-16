@@ -507,6 +507,8 @@ def load_sim(dirname, Plot=False):
         A = data['A']
         if parameters['mc_algorithm'] == 'Cluster':
             lat_bond = data['cluster']
+            parameters['mc_temp'] *= 0.5
+            T *= 0.5
 
     # setting relax sweeps to thermalise first
     if parameters['mc_algorithm'] == 'Monte Carlo':
