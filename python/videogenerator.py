@@ -22,6 +22,8 @@ if __name__ == "__main__":
         A = data['A']
         if parameters['mc_algorithm'] == 'Cluster':
             lat_bond = data['cluster']
+            parameters['mc_temp'] *= 0.5
+            T *= 0.5
 
 
     savecount = 0
