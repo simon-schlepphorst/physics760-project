@@ -11,6 +11,10 @@
 \usepackage{pgf}
 \usepackage{tikz}
 \usetikzlibrary{arrows,automata,positioning}
+\usepackage{multimedia}
+\usepackage{pgfpages}
+
+
 
 \setbeamertemplate{caption}[]
 
@@ -33,7 +37,7 @@
 
 \setbeamertemplate{navigation symbols}{}
 
-
+%\setbeameroption{show notes on second screen}
 
 
 
@@ -227,15 +231,82 @@ all thats left is just to apply all this in an algorithm.
 \begin{frame}
 \frametitle{Results}
 \framesubtitle{Metropolis}
-Get
+	\begin{figure}[h!]
+		\centering
+		\movie[label=MC,width=0.8\textwidth,autostart,loop]
+		{\includegraphics[width=0.8\textwidth]{Images/ClusterEx}}
+		{Images/LatticeMetropolis.avi}
+		\caption{Lattice Simulation}
+	\end{figure}
+\end{frame}
+\begin{frame}
+	\begin{figure}
+		\centering
+		\includegraphics[width=1.0\textwidth]{Images/MC1}
+	\end{figure}
+\end{frame}
+\begin{frame}
+	\begin{figure}
+		\centering
+		\includegraphics[width=1.0\textwidth]{Images/MC4}
+	\end{figure}
+\end{frame}
+\begin{frame}
+	\begin{figure}
+		\centering
+		\includegraphics[width=1.0\textwidth]{Images/MCT}
+	\end{figure}
 \end{frame}
 
 \subsection{Clustering}
 \begin{frame}
-	content...
+\frametitle{Results}
+\framesubtitle{Clustering}
+	\begin{figure}
+	\centering
+	\movie[label=Lat,width=0.8\textwidth,autostart=true,loop=true]
+	{\includegraphics[width=0.8\textwidth]{Images/ClusterEx}}
+	{Images/LatticeCluster.avi}
+	\caption{Lattice Simulation}
+	\end{figure}
+\end{frame}
+\begin{frame}
+	\begin{figure}
+		\centering
+		\includegraphics[width=1.0\textwidth]{Images/C1}
+	\end{figure}
+\end{frame}
+\begin{frame}
+	\begin{figure}
+		\centering
+		\includegraphics[width=1.0\textwidth]{Images/C4}
+	\end{figure}
+\end{frame}
+\begin{frame}
+\begin{figure}
+	\centering
+	\includegraphics[width=1.0\textwidth]{Images/CT}
+\end{figure}
 \end{frame}
 
 
 
 
 \end{document}
+
+%From the script we used: Sections
+%6 "Markov Chains" introduction
+%6.1.1
+%6.2
+%6.4 definition of pos recurrent (6.4.3)
+%6.5 def
+%6.6 def
+%6.7 thm 6.7.1
+%
+%7 introduction
+%7.1
+%up to 7.1.1 thm
+%7.7.1 (maybe mention from 7.7)
+%
+%
+

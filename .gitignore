@@ -13,5 +13,6 @@ latex/*/*.pdf
 latex/*/*.snm
 latex/*/*.synctex.gz
 latex/*/*.toc
+latex/*/_build
 python/runs
 python/simulation.npz
