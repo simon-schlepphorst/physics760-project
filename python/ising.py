@@ -510,6 +510,14 @@ def load_sim(dirname, Plot=False):
             parameters['mc_temp'] *= 0.5
             T *= 0.5
 
+    # fix for magnetisation
+    for j, i in enumerate(lat_list):
+        M[j] = np.sqrt(np.square(np.mean(i)))
+
+    # set Energy to abs value
+    for j, i in enumerate(E):
+        E[j] = np.abs(i)
+
     # setting relax sweeps to thermalise first
     if parameters['mc_algorithm'] == 'Monte Carlo':
         parameters['relax_sweeps'] = 500
@@ -534,7 +542,7 @@ def load_sim(dirname, Plot=False):
         ax1.legend(loc='best')
 
     # calculate errors with blocking
-    max_blocksize = (parameters['mc_sweeps'] - parameters['relax_sweeps']) // 2
+    max_blocksize = np.minimum(200, (parameters['mc_sweeps'] - parameters['relax_sweeps']) // 2)
 
     E_sigma_b = np.sqrt(MeanBlock(E[parameters['relax_sweeps']:], max_blocksize))
     M_sigma_b = np.sqrt(MeanBlock(M[parameters['relax_sweeps']:], max_blocksize))
@@ -740,10 +748,10 @@ def full_sim(dirname, dirnames):
                     Magnet = list_all[j][4]
                     axarr[2*i, 0].plot(np.arange(len(Energy)), Energy, color=c)
                     axarr[2*i, 0].set_title('Energy vs Time, starting {}, at $k_b T = {}$'.format(init, temp))
-                    axarr[2*i, 0].set_ylim(-2, 0)
+                    axarr[2*i, 0].set_ylim(0, 2)
                     axarr[2*i+1, 0].plot(np.arange(len(Magnet)), Magnet, color=c)
                     axarr[2*i+1, 0].set_title('Magnetisation vs Time, starting {}, at $k_b T = {}$'.format(init, temp))
-                    axarr[2*i+1, 0].set_ylim(-1, 1)
+                    axarr[2*i+1, 0].set_ylim(0, 1)
 
                     Energy = list_all[j][1]
                     Magnet = list_all[j][2]
